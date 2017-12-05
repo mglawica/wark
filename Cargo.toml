@@ -13,9 +13,7 @@ version = "0.1.0"
 authors = ["paul@colomiets.name"]
 
 [dependencies]
-abstract-ns = "0.4.1"
-ns-router = "0.1.1"
-ns-std-threaded = "0.3.0"
+ns-env-config = "0.1.0"
 tk-http = { version="0.3.5", default-features=false }
 failure = "0.1.1"
 gumdrop = "0.3.0"
