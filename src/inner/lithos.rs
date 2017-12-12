@@ -1,4 +1,6 @@
 use std::fmt::Write;
+use std::fs::create_dir;
+use std::path::Path;
 
 use inner::options::Options;
 use exit::ExitCode;
@@ -61,5 +63,27 @@ pub fn check_configs(opt: &Options, exit: &mut ExitCode) {
             }
         };
         info!("Command-line: {}", nice_cmdline(&cfg));
+        check_volume_dirs(opt, &cfg, exit)
+    }
+}
+
+fn check_volume_dirs(opt: &Options, cfg: &ContainerConfig, exit: &mut ExitCode)
+{
+    for (dir, _) in &cfg.volumes {
+        if !Path::new(dir).exists() {
+            if !opt.check {
+                info!("Creating missing directory {:?}", dir);
+                match create_dir(dir) {
+                    Ok(()) => {}
+                    Err(e) => {
+                        error!("Error creating dir {:?}: {}", dir, e);
+                        exit.report_error();
+                    }
+                }
+            } else {
+                warn!("Missing directory {:?}", dir);
+                exit.report_error();
+            }
+        }
     }
 }

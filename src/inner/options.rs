@@ -6,4 +6,8 @@ pub struct Options {
                     in current container",
               meta="PAT", no_short)]
     pub lithos_configs: String,
+
+    #[options(help="only check. Returns error code when something \
+        needs to be mutated (i.e. dir created)")]
+    pub check: bool,
 }
