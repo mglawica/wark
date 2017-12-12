@@ -5,20 +5,12 @@ extern crate url;
 
 use std::process::exit;
 
+use gumdrop::Options;
+
 mod options;
 
 
 fn main() {
-    let opt = match options::Config::parse_args_or_exit() {
-        Ok(cfg) => cfg,
-        Err(e) => {
-            let mut errors = e.causes();
-            eprintln!("Error: {}", errors.next().unwrap());
-            for e in errors {
-                eprintln!("  caused by: {}", e);
-            }
-            exit(1);
-        }
-    };
-    println!("Opts {:?}", opt);
+    let opts = options::Options::parse_args_default_or_exit();
+    println!("Opts {:?}", opts);
 }
