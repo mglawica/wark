@@ -1,5 +1,4 @@
-use std::process::exit;
-use std::env::{args, current_dir};
+use std::env::{current_dir};
 
 use url::Url;
 use gumdrop::Options as OptTrait;
@@ -30,17 +29,7 @@ impl Config {
 
     pub fn parse_args_or_exit() -> Result<Config, Error> {
 
-        let args: Vec<String> = args().collect();
-
-        let opts = Options::parse_args_default(&args[1..])?;
-
-        if opts.help {
-            println!("Usage: {} [OPTIONS] [ARGUMENTS]", args[0]);
-            println!();
-            println!("{}", Options::usage());
-            println!();
-            exit(0);
-        }
+        let opts = Options::parse_args_default_or_exit();
 
         let containers = opts.containers.split(',')
             .filter_map(|v| {

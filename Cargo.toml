@@ -16,8 +16,8 @@ authors = ["paul@colomiets.name"]
 ns-env-config = "0.1.0"
 tk-http = { version="0.3.5", default-features=false }
 failure = "0.1.1"
-gumdrop = "0.3.0"
-gumdrop_derive = "0.3.0"
+gumdrop = { git="https://github.com/murarth/gumdrop.git" }
+gumdrop_derive = { git="https://github.com/murarth/gumdrop.git" }
 url = "1.5.1"
 futures = "0.1.16"
 tokio-core = "0.1.10"
