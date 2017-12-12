@@ -28,7 +28,10 @@ commands:
     prerequisites: [cargo-test]
     run: |
       set -ex
-      cargo run -- inner --lithos-configs='examples/lithos-configs/lithos.*.yaml' --check
+      cargo run -- inner \
+        --lithos-configs='examples/lithos-configs/lithos.*.yaml' \
+        --dns-symlinks=/state \
+        --check
 
   make-musl: !Command
     description: Build the library

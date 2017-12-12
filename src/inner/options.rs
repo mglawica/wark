@@ -7,6 +7,10 @@ pub struct Options {
               meta="PAT", no_short)]
     pub lithos_configs: String,
 
+    #[options(help="Symlinks for /etc/resolv.conf and /etc/hosts \
+                    should point to this directory")]
+    pub dns_symlinks: Option<String>,
+
     #[options(help="only check. Returns error code when something \
         needs to be mutated (i.e. dir created)")]
     pub check: bool,

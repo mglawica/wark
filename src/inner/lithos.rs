@@ -1,6 +1,9 @@
+use std::io;
 use std::fmt::Write;
-use std::fs::create_dir;
+use std::fs::{create_dir, read_link, rename};
+use std::os::unix::fs::symlink;
 use std::path::Path;
+
 
 use inner::options::Options;
 use exit::ExitCode;
@@ -63,11 +66,14 @@ pub fn check_configs(opt: &Options, exit: &mut ExitCode) {
             }
         };
         info!("Command-line: {}", nice_cmdline(&cfg));
-        check_volume_dirs(opt, &cfg, exit)
+        check_volume_dirs(&cfg, opt, exit);
+    }
+    if let Some(ref path) = opt.dns_symlinks {
+        symlink_dns(&Path::new(path), opt, exit);
     }
 }
 
-fn check_volume_dirs(opt: &Options, cfg: &ContainerConfig, exit: &mut ExitCode)
+fn check_volume_dirs(cfg: &ContainerConfig, opt: &Options, exit: &mut ExitCode)
 {
     for (dir, _) in &cfg.volumes {
         if !Path::new(dir).exists() {
@@ -83,6 +89,57 @@ fn check_volume_dirs(opt: &Options, cfg: &ContainerConfig, exit: &mut ExitCode)
             } else {
                 warn!("Missing directory {:?}", dir);
                 exit.report_error();
+            }
+        }
+    }
+}
+
+fn symlink_dns(path: &Path, opt: &Options, exit: &mut ExitCode) {
+    symlink_file("resolv.conf", path, opt, exit);
+    symlink_file("hosts", path, opt, exit);
+}
+
+fn fatal_err<T>(r: Result<T, io::Error>) -> Option<io::Error> {
+    match r {
+        Ok(_) => None,
+        Err(ref e)
+        if e.kind() == io::ErrorKind::NotFound ||
+           e.kind() == io::ErrorKind::InvalidInput
+        => None,
+        Err(e) => Some(e),
+    }
+}
+
+fn symlink_file(name: &str, base: &Path, opt: &Options, exit: &mut ExitCode) {
+    let dest = base.join(name);
+    let spath = Path::new("/etc/").join(name);
+    let spath_tmp = format!("/etc/{}.tmp", name);
+    match read_link(&spath) {
+        Ok(ref path) if path == &dest => {}
+        Ok(ref path) if opt.check => {
+            warn!("{:?} points to {:?} instead of {:?}",
+                spath, path, dest);
+            exit.report_error();
+        }
+        Err(ref e) if opt.check => {
+            warn!("Error reading {:?}: {}", spath, e);
+            exit.report_error();
+        }
+        r@Ok(_) | r@Err(_) => {
+            if let Some(e) = fatal_err(r) {
+                warn!("Error reading {:?}: {}", spath, e);
+                exit.report_error();
+            } else {
+                info!("Fixing {:?} symlink to {:?}", spath, dest);
+                match symlink(&dest, &spath_tmp)
+                    .and_then(|()| rename(&spath_tmp, &spath))
+                {
+                    Ok(()) => {}
+                    Err(e) => {
+                        error!("Error symlinking {:?}: {}", spath, e);
+                        exit.report_error();
+                    }
+                }
             }
         }
     }
