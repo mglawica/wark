@@ -21,5 +21,12 @@ gumdrop_derive = { git="https://github.com/murarth/gumdrop.git" }
 url = "1.5.1"
 futures = "0.1.16"
 tokio-core = "0.1.10"
-env_logger = "0.4.3"
 tk-easyloop =  "0.1.1"
+glob = "0.2.11"
+log = "0.4.0-rc.1"
+env_logger = "0.5.0-rc.1"
+quire = { version="0.3.1", default-features=false }
+
+lithos-shim = { path = "lithos-shim" }
+
+[workspace]

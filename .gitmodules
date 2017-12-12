@@ -1,0 +1,3 @@
+[submodule "lithos"]
+	path = lithos
+	url = https://github.com/tailhook/lithos

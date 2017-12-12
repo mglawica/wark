@@ -17,6 +17,19 @@ commands:
     container: ubuntu
     run: [cargo, build]
 
+  cargo-test: !Command
+    description: Run rust/cargo tests
+    container: ubuntu
+    run: [cargo, test]
+
+  test: !Command
+    description: Build the library
+    container: ubuntu
+    prerequisites: [cargo-test]
+    run: |
+      set -ex
+      cargo run -- inner --lithos-configs='examples/lithos-configs/lithos.*.yaml'
+
   make-musl: !Command
     description: Build the library
     container: ubuntu

@@ -1,0 +1,15 @@
+kind: Daemon
+user-id: 1
+group-id: 1
+memory-limit: 1024Mi
+fileno-limit: 100000
+cpu-shares: 1024
+executable: /usr/bin/swindon
+arguments:
+- --config=/config/swindon/main1.yaml
+volumes:
+  /state: !Statedir {}
+environ:
+  CANTAL_PATH: /state/cantal
+  RUST_LOG: info
+  RUST_BACKTRACE: 1
