@@ -1,4 +1,5 @@
 #[derive(Debug, Default, Options)]
+#[options(no_short)]
 pub struct Options {
     #[options(help = "print help message")]
     pub help: bool,

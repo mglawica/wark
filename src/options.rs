@@ -2,13 +2,14 @@ use inner;
 
 
 #[derive(Debug, Default, Options)]
+#[options(no_short)]
 pub struct Options {
 
-    #[options(help = "print help message")]
+    #[options(help = "print help message", short="h")]
     pub help: bool,
 
     #[options(help="a JSON file that represents deployment config",
-              meta="URL", no_short)]
+              meta="URL")]
     pub destination: Option<String>,
 
     #[options(command)]
