@@ -6,15 +6,20 @@ extern crate gumdrop;
 extern crate lithos_shim;
 extern crate url;
 extern crate quire;
+extern crate semver;
+extern crate serde;
 #[macro_use] extern crate gumdrop_derive;
 #[macro_use] extern crate log;
+#[macro_use] extern crate serde_derive;
 
 
 use gumdrop::Options;
 
-mod options;
-mod inner;
+mod deploy;
 mod exit;
+mod inner;
+mod options;
+mod wark_version;
 
 use std::env;
 
@@ -29,7 +34,15 @@ fn main() {
     match opts.command {
         Some(options::Command::Inner(sub)) => inner::main(sub),
         None => {
-            unimplemented!("Main command is not ready yet");
+            if !opts.destination.starts_with("./") {
+                unimplemented!("Only local urls work for now")
+            }
+            let cfg = deploy::Config::parse(&opts.destination)
+                .unwrap_or_else(|e| {
+                    eprintln!("{}", e);
+                    ::std::process::exit(1);
+                });
+            println!("{:?}", cfg);
         }
     }
 }

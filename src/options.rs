@@ -10,7 +10,7 @@ pub struct Options {
 
     #[options(help="a JSON file that represents deployment config",
               meta="URL")]
-    pub destination: Option<String>,
+    pub destination: String,
 
     #[options(command)]
     pub command: Option<Command>,
