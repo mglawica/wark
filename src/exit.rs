@@ -1,3 +1,4 @@
+use std::fmt;
 use std::process::exit;
 
 
@@ -13,6 +14,14 @@ impl ExitCode {
     }
     pub fn report_error(&mut self) {
         self.value = 1;
+    }
+    pub fn error<D: fmt::Display>(&mut self, v: D) {
+        error!("{}", v);
+        self.value = 1;
+    }
+    pub fn fatal_error<D: fmt::Display>(&mut self, v: D) -> ! {
+        error!("{}", v);
+        exit(1);
     }
     pub fn exit(self) -> ! {
         exit(self.value);

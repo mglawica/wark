@@ -1,4 +1,4 @@
-
+extern crate capturing_glob;
 extern crate env_logger;
 extern crate failure;
 extern crate glob;
@@ -15,6 +15,7 @@ extern crate serde;
 
 use gumdrop::Options;
 
+mod base;
 mod deploy;
 mod exit;
 mod inner;
@@ -42,7 +43,7 @@ fn main() {
                     eprintln!("{}", e);
                     ::std::process::exit(1);
                 });
-            println!("{:?}", cfg);
+            base::main(opts, cfg)
         }
     }
 }

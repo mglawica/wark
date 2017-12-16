@@ -1,1 +1,4 @@
 minimum-wark: 0.1.0
+config-files: config/deploy-(*)/lithos.(*).yaml
+config-path-deployment: 1
+config-path-process-name: 2
