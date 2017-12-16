@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use capturing_glob::{glob_with, MatchOptions};
 use quire::{parse_config, Options as Quire};
 use serde_json::Value as Json;
@@ -17,6 +19,8 @@ pub fn main(_options: Options, config: Config) -> ! {
         require_literal_leading_dot: true,
     }).unwrap_or_else(|e| exit.fatal_error(e));
 
+    let mut deployments = BTreeSet::new();
+
     for entry in iter {
 
         let entry = match entry {
@@ -26,9 +30,11 @@ pub fn main(_options: Options, config: Config) -> ! {
                 continue;
             }
         };
+        let deployment = entry.group(config.config_path_deployment).unwrap();
+        deployments.insert(deployment.to_str().unwrap().to_string());
         debug!("Matched {:?}", entry.path());
         debug!("Deployment {:?}, process-name {:?}",
-            entry.group(config.config_path_deployment).unwrap(),
+            deployment,
             entry.group(config.config_path_process_name).unwrap());
 
         let res = parse_config(entry.path(),
@@ -56,6 +62,12 @@ pub fn main(_options: Options, config: Config) -> ! {
         };
         debug!("Container: {:?}", container);
         //debug!("Command-line: {}", nice_cmdline(&cfg));
+    }
+    if deployments.len() > 0 {
+        println!("Available deployments:");
+        for dep in deployments {
+            println!("    {}", dep);
+        }
     }
 
     exit.exit();
