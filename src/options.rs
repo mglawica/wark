@@ -1,4 +1,5 @@
 use inner;
+use local;
 
 
 #[derive(Debug, Default, Options)]
@@ -20,4 +21,8 @@ pub struct Options {
 pub enum Command {
     #[options(help="run all preparation from inside a container")]
     Inner(inner::Options),
+    #[options(help="check that configs are up to date (for CI)")]
+    Check(local::CheckOptions),
+    #[options(help="update generated config files")]
+    Update(local::UpdateOptions),
 }

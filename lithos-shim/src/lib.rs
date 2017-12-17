@@ -26,4 +26,4 @@ mod id_map;
 mod range;
 
 
-pub use container_config::ContainerConfig;
+pub use container_config::{ContainerConfig, ContainerKind};

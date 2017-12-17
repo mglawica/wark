@@ -20,31 +20,37 @@ mod base;
 mod deploy;
 mod exit;
 mod inner;
+mod local;
 mod options;
 mod wark_version;
 
 use std::env;
 
+fn config(path: &str) -> deploy::Config {
+    if !path.starts_with("./") {
+        unimplemented!("Only local urls work for now")
+    }
+    deploy::Config::parse(&path)
+        .unwrap_or_else(|e| {
+            eprintln!("{}", e);
+            ::std::process::exit(1);
+        })
+}
 
 fn main() {
+    use options::Command::*;
+
     if env::var("RUST_LOG").is_err() {
         env::set_var("RUST_LOG", "info");
     }
     env_logger::init();
 
     let opts = options::Options::parse_args_default_or_exit();
+    let ref dest = opts.destination;
     match opts.command {
-        Some(options::Command::Inner(sub)) => inner::main(sub),
-        None => {
-            if !opts.destination.starts_with("./") {
-                unimplemented!("Only local urls work for now")
-            }
-            let cfg = deploy::Config::parse(&opts.destination)
-                .unwrap_or_else(|e| {
-                    eprintln!("{}", e);
-                    ::std::process::exit(1);
-                });
-            base::main(opts, cfg)
-        }
+        Some(Inner(sub)) => inner::main(sub),
+        Some(Check(sub)) => local::check(sub, config(dest)),
+        Some(Update(sub)) => local::update(sub, config(dest)),
+        None => base::main(config(&dest)),
     }
 }
