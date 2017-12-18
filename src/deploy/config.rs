@@ -11,6 +11,7 @@ use wark_version::MinimumVersion;
 pub struct Config {
     pub minimum_wark: String,
     pub config_files: String,
+    pub config_copy: String,
     pub config_path_deployment: usize,
     pub config_path_process_name: usize,
     pub config_files_inner: String,
@@ -25,6 +26,7 @@ impl Config {
         .member("minimum_wark", MinimumVersion)
         .member("config_files",
             Scalar::new().default("config/deploy-(*)/lithos.(*).yaml"))
+        .member("config_copy", Scalar::new().default("config"))
         .member("config_path_deployment", Scalar::new().default(1))
         .member("config_path_process_name", Scalar::new().default(2))
         .member("config_files_inner",

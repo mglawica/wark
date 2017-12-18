@@ -2,7 +2,6 @@ extern crate capturing_glob;
 extern crate difference;
 extern crate env_logger;
 extern crate failure;
-extern crate glob;
 extern crate gumdrop;
 extern crate lithos_shim;
 extern crate url;

@@ -8,7 +8,7 @@ use std::path::Path;
 use inner::options::Options;
 use exit::ExitCode;
 
-use glob::{glob_with, MatchOptions};
+use capturing_glob::{glob_with, MatchOptions};
 use lithos_shim::{ContainerConfig};
 use quire::{parse_config, Options as Quire};
 
@@ -45,17 +45,17 @@ pub fn check_configs(opt: &Options, exit: &mut ExitCode) {
         }
         Ok(files) => files,
     };
-    for fname in files {
-        let fname = match fname {
-            Ok(cfg) => cfg,
+    for entry in files {
+        let entry = match entry {
+            Ok(entry) => entry,
             Err(e) => {
                 error!("Can't list dir: {}", e);
                 exit.report_error();
                 break;
             }
         };
-        info!("Checking {:?}", fname);
-        let res = parse_config(fname,
+        info!("Checking {:?}", entry.path());
+        let res = parse_config(entry.path(),
                 &ContainerConfig::validator(), &Quire::default());
         let cfg: ContainerConfig = match res {
             Ok(cfg) => cfg,
