@@ -1,4 +1,5 @@
 extern crate capturing_glob;
+extern crate difference;
 extern crate env_logger;
 extern crate failure;
 extern crate glob;
@@ -9,9 +10,13 @@ extern crate quire;
 extern crate semver;
 extern crate serde;
 extern crate serde_json;
+extern crate trimmer;
+extern crate void;
 #[macro_use] extern crate gumdrop_derive;
 #[macro_use] extern crate log;
+#[macro_use] extern crate lazy_static;
 #[macro_use] extern crate serde_derive;
+#[macro_use] extern crate trimmer_derive;
 
 
 use gumdrop::Options;
@@ -22,6 +27,7 @@ mod exit;
 mod inner;
 mod local;
 mod options;
+mod templates;
 mod wark_version;
 
 use std::env;

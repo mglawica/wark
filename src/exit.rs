@@ -17,9 +17,19 @@ impl ExitCode {
     pub fn report_error(&mut self) {
         self.value = 1;
     }
+    pub fn is_ok(&self) -> bool {
+        self.value == 0
+    }
     pub fn error<D: fmt::Display>(&mut self, v: D) {
         error!("{}", v);
         self.value = 1;
+    }
+    pub fn fatal_context<A, B>(&mut self, a: A, v: B) -> !
+        where A: fmt::Display, B: fmt::Display,
+    {
+        error!("{}: {}", a, v);
+        self.closed = true;
+        exit(1);
     }
     pub fn fatal_error<D: fmt::Display>(&mut self, v: D) -> ! {
         error!("{}", v);

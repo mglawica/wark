@@ -1,0 +1,22 @@
+## syntax: indent
+## validate default: ^[a-zA-Z0-9_-]+$
+## validate path: ^[^'"\r\n]+$
+
+containers:
+  ## for container in spec.all_containers
+      {{ container }}{{ spec.config.container_suffix }}:
+        setup:
+        - !SubConfig
+          path: vagga.yaml
+          container: {{ container }}
+        ### Temporary test stuff
+        - !Cmd
+          - /work/tmp/wark
+          - inner
+          - --lithos-configs='{{ spec.config.config_files_inner | path }}'
+          - --dns-symlinks=/state
+          - --check
+        # - !Tar
+        #   url: https://github.com/../wark
+        #   script: "./wark"
+  ## endfor

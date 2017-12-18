@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use lithos_shim::{ContainerConfig, ContainerKind};
 use quire::{parse_config, Options as Quire};
@@ -10,25 +10,30 @@ use exit::ExitCode;
 use deploy::config::Config;
 
 
+#[derive(Debug, Variable)]
 pub struct Daemon {
     pub name: String,
     pub container: String,
     pub config: Arc<ContainerConfig>,
 }
 
+#[derive(Debug, Variable)]
 pub struct Command {
     pub name: String,
     pub container: String,
     pub config: Arc<ContainerConfig>,
 }
 
+#[derive(Debug, Variable)]
 pub struct Deployment {
     pub daemons: BTreeMap<String, Daemon>,
     pub commands: BTreeMap<String, Command>,
 }
 
+#[derive(Debug, Variable)]
 pub struct Spec {
     pub config: Config,
+    pub all_containers: BTreeSet<String>,
     pub deployments: BTreeMap<String, Deployment>,
 }
 
@@ -45,6 +50,7 @@ pub fn parse_spec_or_exit(config: Config) -> Spec {
     let mut exit = ExitCode::new();
     let mut spec = Spec {
         config: config,
+        all_containers: BTreeSet::new(),
         deployments: BTreeMap::new(),
     };
 
@@ -105,20 +111,23 @@ pub fn parse_spec_or_exit(config: Config) -> Spec {
             });
         match config.kind {
             ContainerKind::Command => {
+                // TODO(tailhook) check for conflict
                 dep.commands.insert(procname.clone(), Command {
                     name: procname,
-                    container,
+                    container: container.clone(),
                     config,
                 });
             }
             ContainerKind::Daemon => {
+                // TODO(tailhook) check for conflict
                 dep.daemons.insert(procname.clone(), Daemon {
                     name: procname,
-                    container,
+                    container: container.clone(),
                     config,
                 });
             }
             ContainerKind::CommandOrDaemon => {
+                // TODO(tailhook) check for conflict
                 dep.commands.insert(procname.clone(), Command {
                     name: procname.clone(),
                     container: container.clone(),
@@ -126,11 +135,12 @@ pub fn parse_spec_or_exit(config: Config) -> Spec {
                 });
                 dep.daemons.insert(procname.clone(), Daemon {
                     name: procname,
-                    container,
+                    container: container.clone(),
                     config,
                 });
             }
         }
+        spec.all_containers.insert(container);
     }
 
     exit.exit_if_failed();

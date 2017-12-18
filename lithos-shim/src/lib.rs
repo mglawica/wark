@@ -1,9 +1,11 @@
 extern crate quire;
 extern crate serde;
+extern crate trimmer;
 extern crate serde_json;
 
 #[macro_use] extern crate serde_derive;
 
+mod trm;
 
 #[path="../../lithos/src/container_config.rs"]
 #[allow(dead_code)]
