@@ -36,7 +36,12 @@ trimmer_derive = "0.1.0"
 lazy_static = "1.0.0"
 void = "1.0.0"
 difference = "1.0.0"
+git2 = { version="0.6.9", default-features=false, optional=true }
 
 lithos-shim = { path = "lithos-shim" }
+
+[features]
+git = ["git2"]
+default = ["git"]
 
 [workspace]

@@ -14,6 +14,6 @@ impl fmt::Debug for ContainerConfig {
 
 impl<'render> trimmer::Variable<'render> for ContainerConfig {
     fn typename(&self) -> &'static str {
-        "deploy::Config"
+        "ContainerConfig"
     }
 }

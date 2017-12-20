@@ -8,6 +8,7 @@ use serde_json::Value as Json;
 
 use exit::ExitCode;
 use deploy::config::Config;
+use version;
 
 
 #[derive(Debug, Variable)]
@@ -33,6 +34,7 @@ pub struct Deployment {
 #[derive(Debug, Variable)]
 pub struct Spec {
     pub config: Config,
+    pub version: String,
     pub all_containers: BTreeSet<String>,
     pub deployments: BTreeMap<String, Deployment>,
 }
@@ -48,8 +50,12 @@ fn str_kind(kind: ContainerKind) -> &'static str {
 
 pub fn parse_spec_or_exit(config: Config) -> Spec {
     let mut exit = ExitCode::new();
+    let version = version::get(&config, &mut exit);
+    debug!("Version {:?}", version);
+
     let mut spec = Spec {
         config: config,
+        version: version,
         all_containers: BTreeSet::new(),
         deployments: BTreeMap::new(),
     };

@@ -16,6 +16,7 @@ extern crate void;
 #[macro_use] extern crate lazy_static;
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate trimmer_derive;
+#[cfg(feature="git")] extern crate git2;
 
 
 use gumdrop::Options;
@@ -29,6 +30,7 @@ mod inner;
 mod local;
 mod options;
 mod templates;
+mod version;
 mod wark_version;
 
 use std::env;
