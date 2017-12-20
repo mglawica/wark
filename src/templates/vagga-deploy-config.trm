@@ -1,7 +1,7 @@
 ## syntax: indent
 ## validate default: ^[a-zA-Z0-9_-]+$
 ## validate path: ^[^'"\r\n\\]+$
-
+minimum-vagga: v0.8.0-26-ge4a03b5
 containers:
   ## for container in spec.all_containers
     {{ container }}{{ spec.config.container_suffix }}:

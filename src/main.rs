@@ -19,6 +19,8 @@ extern crate void;
 
 
 use gumdrop::Options;
+use std::process::{Command, Stdio};
+use std::str::from_utf8;
 
 mod base;
 mod deploy;
@@ -32,9 +34,20 @@ mod wark_version;
 use std::env;
 
 fn config(path: &str) -> deploy::Config {
-    if !path.starts_with("./") {
-        unimplemented!("Only local urls work for now")
+    let res = Command::new("vagga")
+        .arg("_capsule")
+        .arg("download")
+        .arg(path)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::inherit())
+        .output()
+        .expect("error executing vagga _capsule download");
+    if !res.status.success() {
+        eprintln!("Error executing vagga _capsule download: {}", res.status);
+        ::std::process::exit(1);
     }
+    let path = from_utf8(&res.stdout).expect("valid cache path").trim();
+
     deploy::Config::parse(&path)
         .unwrap_or_else(|e| {
             eprintln!("{}", e);
