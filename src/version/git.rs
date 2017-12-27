@@ -10,6 +10,8 @@ pub fn describe(exit: &mut ExitCode) -> String {
         Ok(v) => v,
         Err(e) => {
             error!("git describe error: {}", e);
+            info!("HINT: Add a named tag to,current or any previous commit: \
+                git tag -a v0.1.0");
             exit.report_error();
             String::from("v0.0.0-unknown")
         }
