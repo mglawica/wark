@@ -6,14 +6,14 @@ containers:
   ## for container in spec.all_containers
     {{ container }}{{ spec.config.container_suffix }}:
       setup:
-      ## if spec.config.config_copy
+      - !SubConfig
+        path: vagga.yaml
+        container: {{ container }}
+      ## for dest, source in spec.config.default_copy
         - !Copy
-          source: '/work/{{ spec.config.config_copy | path }}'
-          path: "/config"
-        - !SubConfig
-          path: vagga.yaml
-          container: {{ container }}
-      ## endif
+          source: '{{ source | path }}'
+          path: '{{ dest | path }}'
+      ## endfor
       ### Temporary test stuff
       - !Cmd
         - /work/tmp/wark

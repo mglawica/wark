@@ -5,9 +5,11 @@ use lithos_shim::{ContainerConfig, ContainerKind};
 use quire::{parse_config, Options as Quire};
 use capturing_glob::{glob_with, MatchOptions};
 use serde_json::Value as Json;
+use trimmer::Context;
 
 use exit::ExitCode;
 use deploy::config::Config;
+use templates::{GlobVar};
 use version;
 
 
@@ -60,93 +62,131 @@ pub fn parse_spec_or_exit(config: Config) -> Spec {
         deployments: BTreeMap::new(),
     };
 
-    let iter = glob_with(&spec.config.config_files, &MatchOptions {
+    let gopts = MatchOptions {
         case_sensitive: true,
         require_literal_separator: true,
         require_literal_leading_dot: true,
-    }).unwrap_or_else(|e| exit.fatal_error(e));
+    };
 
-    for entry in iter {
+    let dir_iter = glob_with(&spec.config.deployment_dirs, &gopts)
+        .unwrap_or_else(|e| exit.fatal_error(e));
 
-        let entry = match entry {
-            Ok(entry) => entry,
+    for dir_entry in dir_iter {
+
+        let dir_entry = match dir_entry {
+            Ok(dir_entry) => dir_entry,
             Err(e) => {
                 exit.error(e);
                 continue;
             }
         };
-        let deployment = entry
-            .group(spec.config.config_path_deployment).unwrap()
-            .to_str().unwrap().to_string();
-        let procname = entry
-            .group(spec.config.config_path_process_name).unwrap()
-            .to_str().unwrap().to_string();
+        let full_pattern = dir_entry.path()
+            .join(&spec.config.lithos_configs);
+        let dir_pattern: GlobVar = (&dir_entry).into();
+        let file_iter = glob_with(
+            &full_pattern.to_str().expect("path is utf-8"),
+                &gopts)
+            .unwrap_or_else(|e| exit.fatal_error(e));
 
-        debug!("Matched {:?}", entry.path());
+        for entry in file_iter {
 
-        let res = parse_config(entry.path(),
-                &ContainerConfig::validator(), &Quire::default());
-        let config: Arc<ContainerConfig> = match res {
-            Ok(cfg) => cfg,
-            Err(e) => {
-                error!("{}", e);
-                exit.error(e);
-                continue;
-            }
-        };
-        let container = match config.metadata.get("container") {
-            Some(&Json::String(ref container)) => container.clone(),
-            Some(_) => {
-                exit.error(format_args!(
-                    "Container in {:?} must be a string", entry.path()));
-                continue;
-            }
-            None => {
-                exit.error(format_args!(
-                    "No container specified in {:?}", entry.path()));
-                continue;
-            }
-        };
-        debug!("Deployment {:?}, {} {:?}, container {:?}",
-            deployment, str_kind(config.kind), procname, container);
-        //debug!("Command-line: {}", nice_cmdline(&config));
-        let dep = spec.deployments.entry(deployment.clone())
-            .or_insert_with(|| Deployment {
-                daemons: BTreeMap::new(),
-                commands: BTreeMap::new(),
-            });
-        match config.kind {
-            ContainerKind::Command => {
-                // TODO(tailhook) check for conflict
-                dep.commands.insert(procname.clone(), Command {
-                    name: procname,
-                    container: container.clone(),
-                    config,
+            let entry = match entry {
+                Ok(entry) => entry,
+                Err(e) => {
+                    exit.error(e);
+                    continue;
+                }
+            };
+            debug!("Matched {:?}", entry.path());
+            let file_pattern: GlobVar = (&entry).into();
+            let patterns = vec![
+                ("deployment_dirs", &dir_pattern),
+                ("lithos_configs", &file_pattern),
+            ].into_iter().collect::<BTreeMap<_, _>>();
+
+            let mut context = Context::new();
+            context.set("patterns", &patterns);
+            let deployment = match spec.config.deployment_name.render(&context)
+            {
+                Ok(v) => v,
+                Err(e) => {
+                    exit.error(e);
+                    "<unknown-deployment>".to_string()
+                }
+            };
+
+            let process = match spec.config.process_name.render(&context) {
+                Ok(v) => v,
+                Err(e) => {
+                    exit.error(e);
+                    "<unknown-proccess>".to_string()
+                }
+            };
+
+            let res = parse_config(entry.path(),
+                    &ContainerConfig::validator(), &Quire::default());
+            let config: Arc<ContainerConfig> = match res {
+                Ok(cfg) => cfg,
+                Err(e) => {
+                    error!("{}", e);
+                    exit.error(e);
+                    continue;
+                }
+            };
+            let container = match config.metadata.get("container") {
+                Some(&Json::String(ref container)) => container.clone(),
+                Some(_) => {
+                    exit.error(format_args!(
+                        "Container in {:?} must be a string", entry.path()));
+                    continue;
+                }
+                None => {
+                    exit.error(format_args!(
+                        "No container specified in {:?}", entry.path()));
+                    continue;
+                }
+            };
+            debug!("Deployment {:?}, {} {:?}, container {:?}",
+                deployment, str_kind(config.kind), process, container);
+            //debug!("Command-line: {}", nice_cmdline(&config));
+            let dep = spec.deployments.entry(deployment.clone())
+                .or_insert_with(|| Deployment {
+                    daemons: BTreeMap::new(),
+                    commands: BTreeMap::new(),
                 });
+            match config.kind {
+                ContainerKind::Command => {
+                    // TODO(tailhook) check for conflict
+                    dep.commands.insert(process.clone(), Command {
+                        name: process,
+                        container: container.clone(),
+                        config,
+                    });
+                }
+                ContainerKind::Daemon => {
+                    // TODO(tailhook) check for conflict
+                    dep.daemons.insert(process.clone(), Daemon {
+                        name: process,
+                        container: container.clone(),
+                        config,
+                    });
+                }
+                ContainerKind::CommandOrDaemon => {
+                    // TODO(tailhook) check for conflict
+                    dep.commands.insert(process.clone(), Command {
+                        name: process.clone(),
+                        container: container.clone(),
+                        config: config.clone(),
+                    });
+                    dep.daemons.insert(process.clone(), Daemon {
+                        name: process,
+                        container: container.clone(),
+                        config,
+                    });
+                }
             }
-            ContainerKind::Daemon => {
-                // TODO(tailhook) check for conflict
-                dep.daemons.insert(procname.clone(), Daemon {
-                    name: procname,
-                    container: container.clone(),
-                    config,
-                });
-            }
-            ContainerKind::CommandOrDaemon => {
-                // TODO(tailhook) check for conflict
-                dep.commands.insert(procname.clone(), Command {
-                    name: procname.clone(),
-                    container: container.clone(),
-                    config: config.clone(),
-                });
-                dep.daemons.insert(procname.clone(), Daemon {
-                    name: procname,
-                    container: container.clone(),
-                    config,
-                });
-            }
+            spec.all_containers.insert(container);
         }
-        spec.all_containers.insert(container);
     }
 
     exit.exit_if_failed();

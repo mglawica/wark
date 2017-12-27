@@ -31,7 +31,7 @@ serde_derive = "1.0.0"
 matches = "0.1.6"
 semver = "0.9.0"
 capturing-glob = "0.1.0"
-trimmer = { git="https://github.com/tailhook/trimmer", rev="ed237a4" }
+trimmer = { git="https://github.com/tailhook/trimmer", rev="cfcd048" }
 trimmer_derive = "0.1.0"
 lazy_static = "1.0.0"
 void = "1.0.0"

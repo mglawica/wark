@@ -1,11 +1,13 @@
 use std::path::Path;
+use std::collections::BTreeMap;
 
 use failure::{Error, err_msg};
 use quire::{parse_config, Options};
-use quire::validate::{Structure, Scalar, Enum, Nothing};
+use quire::validate::{Structure, Scalar, Enum, Nothing, Mapping};
 use trimmer::{Variable, Output, DataError};
 
 use wark_version::MinimumVersion;
+use templates::Pattern;
 
 
 #[derive(Debug, Deserialize)]
@@ -18,14 +20,15 @@ pub enum VersionKind {
 #[derive(Debug, Deserialize, Variable)]
 pub struct Config {
     pub minimum_wark: String,
-    pub config_files: String,
-    pub config_copy: String,
-    pub config_path_deployment: usize,
-    pub config_path_process_name: usize,
+    pub deployment_dirs: String,
+    pub lithos_configs: String,
+    pub default_copy: BTreeMap<String, String>,
     pub config_files_inner: String,
     pub vagga_config: String,
     pub container_suffix: String,
     pub version: VersionKind,
+    pub deployment_name: Pattern,
+    pub process_name: Pattern,
 }
 
 
@@ -33,15 +36,17 @@ impl Config {
     fn validator<'x>() -> Structure<'x> {
         Structure::new()
         .member("minimum_wark", MinimumVersion)
-        .member("config_files",
-            Scalar::new().default("config/deploy-(*)/lithos.(*).yaml"))
-        .member("config_copy", Scalar::new().default("config"))
-        .member("config_path_deployment", Scalar::new().default(1))
-        .member("config_path_process_name", Scalar::new().default(2))
+        .member("deployment_dirs", Scalar::new().default("config/deploy-(*)"))
+        .member("lithos_configs", Scalar::new().default("lithos.(*).yaml"))
+        .member("default_copy", Mapping::new(Scalar::new(), Scalar::new()))
         .member("config_files_inner",
-            Scalar::new().default("/config/deploy-(*)/lithos.(*).yaml"))
+            Scalar::new().default("/config/deploy-*/lithos.*.yaml"))
         .member("vagga_config", Scalar::new().default("vagga/deploy.yaml"))
         .member("container_suffix", Scalar::new().default("-deploy"))
+        .member("deployment_name", Scalar::new()
+            .default("{{ patterns.deployment_dirs[1] }}"))
+        .member("process_name", Scalar::new()
+            .default("{{ patterns.lithos_configs[1] }}"))
         .member("version", Enum::new()
             .option("git-describe", Nothing)
             .allow_plain())
