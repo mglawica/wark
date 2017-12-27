@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 
 use failure::{Error, err_msg};
 use quire::{parse_config, Options};
-use quire::validate::{Structure, Scalar, Enum, Nothing, Mapping};
+use quire::validate::{Structure, Scalar, Enum, Nothing, Mapping, Anything};
 use trimmer::{Variable, Output, DataError};
 
 use wark_version::MinimumVersion;
@@ -16,6 +16,12 @@ pub enum VersionKind {
     GitDescribe,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(tag="tool", rename_all="snake_case")]
+pub enum Stage {
+    CiruelaUpload { hosts: Vec<Pattern>, dir: Pattern },
+    VerwalterMetadataV2 {},
+}
 
 #[derive(Debug, Deserialize, Variable)]
 pub struct Config {
@@ -29,6 +35,7 @@ pub struct Config {
     pub version: VersionKind,
     pub deployment_name: Pattern,
     pub process_name: Pattern,
+    pub script: Vec<Stage>,
 }
 
 
@@ -50,6 +57,8 @@ impl Config {
         .member("version", Enum::new()
             .option("git-describe", Nothing)
             .allow_plain())
+        // TODO(tailhook)
+        .member("script", Anything)
     }
     pub fn parse<P: AsRef<Path>>(fname: P) -> Result<Config, Error> {
         let cfg = parse_config(fname, &Config::validator(),
@@ -69,5 +78,11 @@ impl<'render> Variable<'render> for VersionKind {
         match *self {
             GitDescribe => Ok(Output::owned("git-describe")),
         }
+    }
+}
+
+impl<'render> Variable<'render> for Stage {
+    fn typename(&self) -> &'static str {
+        "Stage"
     }
 }
