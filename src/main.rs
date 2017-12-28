@@ -71,6 +71,8 @@ fn main() {
         Some(Inner(sub)) => inner::main(sub),
         Some(Check(sub)) => local::check(sub, config(dest)),
         Some(Update(sub)) => local::update(sub, config(dest)),
-        None => base::main(config(&dest)),
+        None if opts.deployment.is_some()
+        => deploy::main(config(dest), opts.deployment.unwrap()),
+        None => base::main(config(dest)),
     }
 }

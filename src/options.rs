@@ -13,6 +13,9 @@ pub struct Options {
               meta="URL")]
     pub destination: String,
 
+    #[options(help="a deployment name to deploy now", meta="NAME", short="d")]
+    pub deployment: Option<String>,
+
     #[options(command)]
     pub command: Option<Command>,
 }
