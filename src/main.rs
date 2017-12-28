@@ -60,10 +60,10 @@ fn config(path: &str) -> deploy::Config {
 fn main() {
     use options::Command::*;
 
-    if env::var("RUST_LOG").is_err() {
-        env::set_var("RUST_LOG", "info");
+    if env::var("WARK_LOG").is_err() {
+        env::set_var("WARK_LOG", "info");
     }
-    env_logger::init();
+    env_logger::init_from_env("WARK_LOG");
 
     let opts = options::Options::parse_args_default_or_exit();
     let ref dest = opts.destination;
