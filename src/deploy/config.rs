@@ -8,6 +8,7 @@ use trimmer::{Variable, Output, DataError};
 
 use wark_version::MinimumVersion;
 use templates::Pattern;
+use deploy::tools;
 
 
 #[derive(Debug, Deserialize)]
@@ -19,7 +20,7 @@ pub enum VersionKind {
 #[derive(Debug, Deserialize)]
 #[serde(tag="tool", rename_all="snake_case")]
 pub enum Stage {
-    CiruelaUpload { hosts: Vec<Pattern>, dir: Pattern },
+    CiruelaUpload(tools::ciruela::Settings),
 }
 
 #[derive(Debug, Deserialize, Variable)]

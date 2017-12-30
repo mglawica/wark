@@ -1,10 +1,11 @@
 use std::str::from_utf8;
 use std::ascii::AsciiExt;
-use std::process::{Command, Stdio};
-use std::collections::{BTreeSet, BTreeMap};
+use std::process::{Command, Stdio, exit};
+use std::collections::{BTreeSet, BTreeMap, HashMap};
 
 pub mod config;
 pub mod spec;
+mod tools;
 
 pub use self::config::{Config, Stage};
 pub use self::spec::{Spec, parse_spec_or_exit};
@@ -29,9 +30,12 @@ fn check_ver(s: &str) -> bool {
         s.chars().all(|x| x.is_ascii() && x.is_alphanumeric() || x == '.')
 }
 
-pub fn main(config: Config, deployment: String, dry_run: bool) -> ! {
+pub fn main(config: Config, deployment: String, dry_run: bool,
+            vars: HashMap<String, String>)
+    -> !
+{
     let spec = parse_spec_or_exit(config);
-    let mut exit = ExitCode::new();
+    let mut code = ExitCode::new();
     let mut failed = BTreeSet::new();
     let mut context = Context {
         spec, dry_run, deployment,
@@ -42,7 +46,7 @@ pub fn main(config: Config, deployment: String, dry_run: bool) -> ! {
         Some(d) => d,
         None => {
             error!("No deployment {:?} found", context.deployment);
-            ::std::process::exit(1);
+            exit(1);
         }
     };
     let containers = deployment.commands.values().map(|x| &x.container)
@@ -61,13 +65,13 @@ pub fn main(config: Config, deployment: String, dry_run: bool) -> ! {
             Ok((s, _)) => {
                 error!("Container {:?} failed to build with status: {}",
                     container, s);
-                exit.report_error();
+                code.report_error();
                 failed.insert(container.clone());
                 continue;
             }
             Err(e) => {
                 error!("Can't build container {:?}: {}", container, e);
-                exit.report_error();
+                code.report_error();
                 failed.insert(container.clone());
                 continue;
             }
@@ -77,7 +81,7 @@ pub fn main(config: Config, deployment: String, dry_run: bool) -> ! {
             _ => {
                 error!("Invalid version returned for container {:?}: {:?}",
                     container, String::from_utf8_lossy(&ver_bytes));
-                exit.report_error();
+                code.report_error();
                 failed.insert(container.clone());
                 continue;
             }
@@ -89,14 +93,22 @@ pub fn main(config: Config, deployment: String, dry_run: bool) -> ! {
 
     info!("Built containers {:?}",
         context.containers.values().map(|x| &x.version).collect::<Vec<_>>());
-    if !exit.is_ok() {
+    if !code.is_ok() {
         error!("Failed containers {:?}", failed);
     }
-    exit.exit_if_failed();
+    code.exit_if_failed();
+
     for item in &context.spec.config.script {
         match *item {
-            Stage::CiruelaUpload { ref hosts, ref dir } => {
-                unimplemented!();
+            Stage::CiruelaUpload(ref settings) => {
+                match tools::ciruela::execute(&context, settings, &vars) {
+                    Ok(()) => {}
+                    Err(e) => {
+                        error!("Version {:?} failed to deploy: {}",
+                            context.spec.version, e);
+                        exit(1);
+                    }
+                }
             }
         }
     }
@@ -107,6 +119,6 @@ pub fn main(config: Config, deployment: String, dry_run: bool) -> ! {
     } else {
         info!("Version {:?} is successfully deployed", context.spec.version);
     }
-    ::std::process::exit(0);
+    exit(0);
 }
 

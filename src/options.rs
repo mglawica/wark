@@ -19,6 +19,10 @@ pub struct Options {
     #[options(help="prepare everything but don't deploy")]
     pub dry_run: bool,
 
+    #[options(help="define variable (passed as `var.NAME` to templates)",
+              meta="NAME=VALUE", short="D")]
+    pub var: Vec<String>,
+
     #[options(command)]
     pub command: Option<Command>,
 }

@@ -22,6 +22,7 @@ extern crate void;
 use gumdrop::Options;
 use std::process::{Command, Stdio};
 use std::str::from_utf8;
+use std::collections::HashMap;
 
 mod base;
 mod deploy;
@@ -71,8 +72,23 @@ fn main() {
         Some(Inner(sub)) => inner::main(sub),
         Some(Check(sub)) => local::check(sub, config(dest)),
         Some(Update(sub)) => local::update(sub, config(dest)),
-        None if opts.deployment.is_some()
-        => deploy::main(config(dest), opts.deployment.unwrap(), opts.dry_run),
+        None if opts.deployment.is_some() => {
+            let mut vars = HashMap::new();
+            for pair in &opts.var {
+                let mut iter = pair.splitn(2, '=');
+                match (iter.next(), iter.next()) {
+                    (Some(key), Some(val)) => {
+                        vars.insert(key.to_string(), val.to_string());
+                    }
+                    (Some(key), None) => {
+                        vars.insert(key.to_string(), "true".to_string());
+                    }
+                    _ => unreachable!(),
+                }
+            }
+            deploy::main(config(dest), opts.deployment.unwrap(),
+                opts.dry_run, vars)
+        }
         None => base::main(config(dest)),
     }
 }
