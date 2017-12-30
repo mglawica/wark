@@ -20,7 +20,6 @@ pub enum VersionKind {
 #[serde(tag="tool", rename_all="snake_case")]
 pub enum Stage {
     CiruelaUpload { hosts: Vec<Pattern>, dir: Pattern },
-    VerwalterMetadataV2 {},
 }
 
 #[derive(Debug, Deserialize, Variable)]

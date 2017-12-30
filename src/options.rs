@@ -16,6 +16,9 @@ pub struct Options {
     #[options(help="a deployment name to deploy now", meta="NAME", short="d")]
     pub deployment: Option<String>,
 
+    #[options(help="prepare everything but don't deploy")]
+    pub dry_run: bool,
+
     #[options(command)]
     pub command: Option<Command>,
 }

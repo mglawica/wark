@@ -72,7 +72,7 @@ fn main() {
         Some(Check(sub)) => local::check(sub, config(dest)),
         Some(Update(sub)) => local::update(sub, config(dest)),
         None if opts.deployment.is_some()
-        => deploy::main(config(dest), opts.deployment.unwrap()),
+        => deploy::main(config(dest), opts.deployment.unwrap(), opts.dry_run),
         None => base::main(config(dest)),
     }
 }

@@ -6,10 +6,22 @@ use std::collections::{BTreeSet, BTreeMap};
 pub mod config;
 pub mod spec;
 
-pub use self::config::Config;
+pub use self::config::{Config, Stage};
 pub use self::spec::{Spec, parse_spec_or_exit};
 
 use exit::ExitCode;
+
+
+struct Container {
+    version: String,
+}
+
+struct Context {
+    spec: Spec,
+    dry_run: bool,
+    deployment: String,
+    containers: BTreeMap<String, Container>,
+}
 
 
 fn check_ver(s: &str) -> bool {
@@ -17,23 +29,26 @@ fn check_ver(s: &str) -> bool {
         s.chars().all(|x| x.is_ascii() && x.is_alphanumeric() || x == '.')
 }
 
-pub fn main(config: Config, deployment: String) -> ! {
+pub fn main(config: Config, deployment: String, dry_run: bool) -> ! {
     let spec = parse_spec_or_exit(config);
     let mut exit = ExitCode::new();
-    let mut built = BTreeMap::new();
     let mut failed = BTreeSet::new();
+    let mut context = Context {
+        spec, dry_run, deployment,
+        containers: BTreeMap::new(),
+    };
 
-    let deployment = match spec.deployments.get(&deployment) {
+    let deployment = match context.spec.deployments.get(&context.deployment) {
         Some(d) => d,
         None => {
-            error!("No deployment {:?} found", deployment);
+            error!("No deployment {:?} found", context.deployment);
             ::std::process::exit(1);
         }
     };
     let containers = deployment.commands.values().map(|x| &x.container)
         .chain(deployment.daemons.values().map(|x| &x.container));
     for container in containers {
-        if built.contains_key(container) {
+        if context.containers.contains_key(container) {
             continue;
         }
         let output = Command::new("vagga")
@@ -67,15 +82,31 @@ pub fn main(config: Config, deployment: String) -> ! {
                 continue;
             }
         };
-        built.insert(container.clone(), version);
+        context.containers.insert(container.clone(), Container {
+            version: version,
+        });
     }
 
-    info!("Built containers {:?}", built);
+    info!("Built containers {:?}",
+        context.containers.values().map(|x| &x.version).collect::<Vec<_>>());
     if !exit.is_ok() {
         error!("Failed containers {:?}", failed);
     }
     exit.exit_if_failed();
-    eprintln!("Deploying {:?}", deployment);
-    unimplemented!();
+    for item in &context.spec.config.script {
+        match *item {
+            Stage::CiruelaUpload { ref hosts, ref dir } => {
+                unimplemented!();
+            }
+        }
+    }
+
+    if dry_run {
+        info!("DRY-RUN: Version {:?} is ready for deploy",
+            context.spec.version);
+    } else {
+        info!("Version {:?} is successfully deployed", context.spec.version);
+    }
+    ::std::process::exit(0);
 }
 
