@@ -1,24 +1,65 @@
 use std::collections::HashMap;
+use std::fs::{File, set_permissions};
+use std::io;
+use std::os::unix::fs::PermissionsExt;
 use std::process::Command;
 use std::time::Instant;
+use std::path::Path;
 
 use failure::{Error, err_msg, Context as Fail, ResultExt};
+use libflate::gzip::Decoder;
+use tar::Archive;
 use trimmer::{Context as Vars};
 
-use templates::{Pattern};
 use deploy::Context;
+use download::download;
+use templates::{Pattern};
+
+
+static DEFAULT_CIRUELA: &str = "0.4.4";
 
 
 #[derive(Debug, Deserialize)]
 pub struct Settings {
     hosts: Vec<Pattern>,
     dir: Pattern,
+    #[serde(default="default_ciruela")]
+    ciruela_version: String,
+}
+
+fn default_ciruela() -> String {
+    DEFAULT_CIRUELA.to_string()
+}
+
+fn unpack_ciruela(tar: &Path) -> Result<(), Error> {
+    let f = File::open(&tar)?;
+    let d = Decoder::new(f)?;
+    let mut a = Archive::new(d);
+    for entry in a.entries()? {
+        let mut file = entry?;
+        if file.header().path()? != Path::new("usr/bin/ciruela") {
+            trace!("Skipping {:?}", file.header().path());
+            continue;
+        }
+        io::copy(&mut file, &mut File::create("/bin/ciruela")?)?;
+        set_permissions("/bin/ciruela", PermissionsExt::from_mode(0o777))?;
+        return Ok(());
+    }
+    return Err(err_msg("ciruela binary not found in archive"));
 }
 
 pub(in deploy) fn execute(ctx: &Context,
     set: &Settings, vars: &HashMap<String, String>)
     -> Result<(), Error>
 {
+    let ciruela = Path::new("/bin/ciruela");
+    if !ciruela.exists() {
+        let tar = download(&format!("https://github.com/tailhook/ciruela/\
+            releases/download/v{0}/ciruela-static-v{0}.tar.gz",
+            set.ciruela_version), false)?;
+        unpack_ciruela(&tar).context("can't unpack ciruela")?;
+    }
+
     let mut context = Vars::new();
     context.set("vars", vars);
     for (name, container) in &ctx.containers {
@@ -30,7 +71,7 @@ pub(in deploy) fn execute(ctx: &Context,
             .map_err(|e| err_msg(format!("Can't render host pattern: {}", e)))?;
         let dir = set.dir.render(&context)
             .map_err(|e| err_msg(format!("Can't render dir pattern: {}", e)))?;
-        let mut cmd = Command::new("ciruela");
+        let mut cmd = Command::new(ciruela);
         cmd.arg("upload");
         cmd.arg("-d");
         cmd.arg(format!("/vagga/containers/{}", container.version));

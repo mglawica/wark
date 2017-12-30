@@ -37,6 +37,8 @@ lazy_static = "1.0.0"
 void = "1.0.0"
 difference = "1.0.0"
 git2 = { version="0.6.9", default-features=false, optional=true }
+tar = "0.4.14"
+libflate = "0.1.13"
 
 lithos-shim = { path = "lithos-shim" }
 

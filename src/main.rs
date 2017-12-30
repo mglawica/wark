@@ -3,13 +3,15 @@ extern crate difference;
 extern crate env_logger;
 extern crate failure;
 extern crate gumdrop;
+extern crate libflate;
 extern crate lithos_shim;
-extern crate url;
 extern crate quire;
 extern crate semver;
 extern crate serde;
 extern crate serde_json;
+extern crate tar;
 extern crate trimmer;
+extern crate url;
 extern crate void;
 #[macro_use] extern crate gumdrop_derive;
 #[macro_use] extern crate log;
@@ -20,12 +22,11 @@ extern crate void;
 
 
 use gumdrop::Options;
-use std::process::{Command, Stdio};
-use std::str::from_utf8;
 use std::collections::HashMap;
 
 mod base;
 mod deploy;
+mod download;
 mod exit;
 mod inner;
 mod local;
@@ -37,25 +38,12 @@ mod wark_version;
 use std::env;
 
 fn config(path: &str) -> deploy::Config {
-    let res = Command::new("vagga")
-        .arg("_capsule")
-        .arg("download")
-        .arg(path)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::inherit())
-        .output()
-        .expect("error executing vagga _capsule download");
-    if !res.status.success() {
-        eprintln!("Error executing vagga _capsule download: {}", res.status);
+    download::download(path, true)
+    .and_then(|path| deploy::Config::parse(&path))
+    .unwrap_or_else(|e| {
+        eprintln!("{}", e);
         ::std::process::exit(1);
-    }
-    let path = from_utf8(&res.stdout).expect("valid cache path").trim();
-
-    deploy::Config::parse(&path)
-        .unwrap_or_else(|e| {
-            eprintln!("{}", e);
-            ::std::process::exit(1);
-        })
+    })
 }
 
 fn main() {
