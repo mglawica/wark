@@ -16,7 +16,7 @@ use download::download;
 use templates::{Pattern};
 
 
-static DEFAULT_CIRUELA: &str = "0.4.4";
+static DEFAULT_CIRUELA: &str = "0.5.2";
 
 
 #[derive(Debug, Deserialize)]
