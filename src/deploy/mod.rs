@@ -13,10 +13,12 @@ pub use self::spec::{Spec, parse_spec_or_exit};
 use exit::ExitCode;
 
 
+#[derive(Debug)]
 struct Container {
     version: String,
 }
 
+#[derive(Debug)]
 struct Context {
     spec: Spec,
     dry_run: bool,
@@ -102,6 +104,16 @@ pub fn main(config: Config, deployment: String, dry_run: bool,
         match *item {
             Stage::CiruelaUpload(ref settings) => {
                 match tools::ciruela::execute(&context, settings, &vars) {
+                    Ok(()) => {}
+                    Err(e) => {
+                        error!("Version {:?} failed to deploy: {}",
+                            context.spec.version, e);
+                        exit(1);
+                    }
+                }
+            }
+            Stage::VerwalterKokkupanek(ref settings) => {
+                match tools::kokkupanek::execute(&context, settings, &vars) {
                     Ok(()) => {}
                     Err(e) => {
                         error!("Version {:?} failed to deploy: {}",
