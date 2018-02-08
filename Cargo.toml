@@ -31,7 +31,7 @@ serde_derive = "1.0.0"
 matches = "0.1.6"
 semver = "0.9.0"
 capturing-glob = "0.1.0"
-trimmer = { git="https://github.com/tailhook/trimmer", rev="cfcd048" }
+trimmer = "0.3.6"
 trimmer_derive = "0.1.0"
 lazy_static = "1.0.0"
 void = "1.0.0"
@@ -39,8 +39,12 @@ difference = "1.0.0"
 git2 = { version="0.6.9", default-features=false, optional=true }
 tar = "0.4.14"
 libflate = "0.1.13"
+rand = "0.4.2"
 
 lithos-shim = { path = "lithos-shim" }
+
+[patch.crates-io]
+abstract-ns = { git="https://github.com/tailhook/abstract-ns", rev="b0bb540" }
 
 [features]
 git = ["git2"]
