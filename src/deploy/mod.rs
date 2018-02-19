@@ -1,5 +1,4 @@
 use std::str::from_utf8;
-use std::ascii::AsciiExt;
 use std::process::{Command, Stdio, exit};
 use std::collections::{BTreeSet, BTreeMap, HashMap};
 
