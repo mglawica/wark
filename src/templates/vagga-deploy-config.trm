@@ -14,13 +14,13 @@ containers:
           source: '{{ source | path }}'
           path: '{{ dest | path }}'
       ## endfor
-      ### Temporary test stuff
+      - !Tar
+        url: "https://github.com/mglawica/wark/releases/download/v0.1.0/wark"
+        path: /tmp
+        script: "/tmp/wark"
       - !Cmd
-        - /work/tmp/wark
+        - /tmp/wark
         - inner
         - '--lithos-configs={{ spec.config.config_files_inner | path }}'
         - --dns-symlinks=/state
-      # - !Tar
-      #   url: https://github.com/../wark
-      #   script: "./wark"
   ## endfor
