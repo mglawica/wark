@@ -18,6 +18,7 @@ pub struct Daemon {
     pub name: String,
     pub container: String,
     pub config: Arc<ContainerConfig>,
+    pub config_path: String,
 }
 
 #[derive(Debug, Variable)]
@@ -25,6 +26,7 @@ pub struct Command {
     pub name: String,
     pub container: String,
     pub config: Arc<ContainerConfig>,
+    pub config_path: String,
 }
 
 #[derive(Debug, Variable)]
@@ -123,7 +125,9 @@ pub fn parse_spec_or_exit(config: Config) -> Spec {
                 }
             };
 
-            let res = parse_config(entry.path(),
+            let config_path = entry.path().to_str().expect("valid filename")
+                .to_string();
+            let res = parse_config(&config_path,
                     &ContainerConfig::validator(), &Quire::default());
             let config: Arc<ContainerConfig> = match res {
                 Ok(cfg) => cfg,
@@ -160,7 +164,7 @@ pub fn parse_spec_or_exit(config: Config) -> Spec {
                     dep.commands.insert(process.clone(), Command {
                         name: process,
                         container: container.clone(),
-                        config,
+                        config, config_path,
                     });
                 }
                 ContainerKind::Daemon => {
@@ -168,7 +172,7 @@ pub fn parse_spec_or_exit(config: Config) -> Spec {
                     dep.daemons.insert(process.clone(), Daemon {
                         name: process,
                         container: container.clone(),
-                        config,
+                        config, config_path,
                     });
                 }
                 ContainerKind::CommandOrDaemon => {
@@ -177,11 +181,12 @@ pub fn parse_spec_or_exit(config: Config) -> Spec {
                         name: process.clone(),
                         container: container.clone(),
                         config: config.clone(),
+                        config_path: config_path.clone(),
                     });
                     dep.daemons.insert(process.clone(), Daemon {
                         name: process,
                         container: container.clone(),
-                        config,
+                        config, config_path,
                     });
                 }
             }

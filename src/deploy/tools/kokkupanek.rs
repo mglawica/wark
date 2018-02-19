@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::time::Duration;
 use std::sync::Arc;
-use std::io::BufWriter;
 
 use failure::{Error, err_msg, Fail};
 use futures::{Future, Stream, Async, Sink};
@@ -13,7 +12,7 @@ use rand::{thread_rng, Rng};
 use tk_easyloop::{self, handle, timeout};
 use trimmer::{Context as Vars};
 use tokio_core::net::TcpStream;
-use serde_json::{to_vec, to_writer, from_slice};
+use serde_json::{to_vec, to_value, from_slice, Value as Json};
 use tk_http::{Version, Status};
 use tk_http::client::{RecvMode, Head, Error as HError, Encoder, EncoderDone};
 use tk_http::client::{Codec, Config, Proto};
@@ -33,7 +32,7 @@ pub struct Settings {
 #[derive(Debug, Serialize)]
 struct GraphqlRequest<'a> {
     query: String,
-    variables: &'a HashMap<String, String>,
+    variables: HashMap<&'a str, Json>,
 }
 
 #[derive(Debug)]
@@ -41,6 +40,27 @@ struct GetLeaderCodec(Option<oneshot::Sender<String>>);
 #[derive(Debug)]
 struct PostNewDeployment(Option<oneshot::Sender<()>>, Arc<Vec<u8>>);
 
+#[derive(Debug, Serialize)]
+pub struct NewDeployment<'a> {
+    version: &'a str,
+    daemons: Vec<NewDaemon<'a>>,
+    commands: Vec<NewCommand<'a>>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct NewDaemon<'a> {
+    name: &'a String,
+    config: &'a String,
+    image: &'a String,
+    //variables: Option<Vec<NewVariable>>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct NewCommand<'a> {
+    name: &'a String,
+    config: &'a String,
+    image: &'a String,
+}
 
 pub(in deploy) fn execute(ctx: &Context,
     set: &Settings, vars: &HashMap<String, String>)
@@ -63,15 +83,41 @@ pub(in deploy) fn execute(ctx: &Context,
         return Err(err_msg("hosts must not be empty"));
     }
 
+    let dep = match ctx.spec.deployments.get(&ctx.deployment) {
+        Some(dep) => dep,
+        None => {
+            return Err(err_msg(format!("no deployment {:?} found",
+                ctx.deployment)));
+        }
+    };
     println!("Kokkupanek: settings: {:?}, vars: {:?}\nContext: {:#?}",
         set, vars, ctx);
-    for (name, daemon) in &ctx.spec.deployments.get("staging").unwrap().daemons {
-        println!("Daemon {:?}: {:?}", name, daemon.config.metadata);
-    }
+
+    let mut gvars = HashMap::new();
+    gvars.insert("slug", Json::String(slug));
+    gvars.insert("config", to_value(&NewDeployment {
+        version: &ctx.spec.version,
+        daemons: dep.daemons.values().map(|d| Ok(NewDaemon {
+            name: &d.name,
+            image: &ctx.containers.get(&d.container)
+                .ok_or_else(|| {
+                    err_msg(format!("container {:?} not found", d.container))
+                })?.version,
+            config: &d.config_path,
+        })).collect::<Result<_, Error>>()?,
+        commands: dep.commands.values().map(|c| Ok(NewCommand {
+            name: &c.name,
+            image: &ctx.containers.get(&c.container)
+                .ok_or_else(|| {
+                    err_msg(format!("container {:?} not found", c.container))
+                })?.version,
+            config: &c.config_path,
+        })).collect::<Result<_, Error>>()?,
+    }).expect("new deployment serializes fine"));
 
     let req = Arc::new(to_vec(&GraphqlRequest {
         query: deployment_graphql,
-        variables: vars,
+        variables: gvars,
     }).expect("can serialize graphql request"));
 
     tk_easyloop::run(move || {
@@ -220,8 +266,7 @@ impl<S> Codec<S> for PostNewDeployment {
             concat!("wark/", env!("CARGO_PKG_VERSION"))).unwrap();
         e.add_chunked().unwrap();
         e.done_headers().unwrap();
-        to_writer(BufWriter::new(&mut e), &self.1)
-            .expect("can serialize query");
+        e.write_body(&self.1);
         ok(e.done())
     }
     fn headers_received(&mut self, headers: &Head) -> Result<RecvMode, HError> {
