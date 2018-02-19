@@ -2,7 +2,6 @@ extern crate capturing_glob;
 extern crate difference;
 extern crate env_logger;
 extern crate futures;
-extern crate gumdrop;
 extern crate libflate;
 extern crate lithos_shim;
 extern crate ns_env_config;
@@ -19,7 +18,7 @@ extern crate trimmer;
 extern crate url;
 extern crate void;
 #[macro_use] extern crate failure;
-#[macro_use] extern crate gumdrop_derive;
+#[macro_use] extern crate structopt;
 #[macro_use] extern crate log;
 #[macro_use] extern crate lazy_static;
 #[macro_use] extern crate serde_derive;
@@ -27,8 +26,8 @@ extern crate void;
 #[cfg(feature="git")] extern crate git2;
 
 
-use gumdrop::Options;
 use std::collections::HashMap;
+use structopt::StructOpt;
 
 mod base;
 mod deploy;
@@ -60,7 +59,7 @@ fn main() {
     }
     env_logger::init_from_env("WARK_LOG");
 
-    let opts = options::Options::parse_args_default_or_exit();
+    let opts = options::Options::from_args();
     let ref dest = opts.destination;
     match opts.command {
         Some(Inner(sub)) => inner::main(sub),

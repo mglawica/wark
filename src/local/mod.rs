@@ -9,13 +9,11 @@ use deploy::{Config, Spec, parse_spec_or_exit};
 use exit::ExitCode;
 use templates;
 
-#[derive(Debug, Default, Options)]
-#[options(no_short)]
+#[derive(Debug, Default, StructOpt)]
 pub struct CheckOptions {
 }
 
-#[derive(Debug, Default, Options)]
-#[options(no_short)]
+#[derive(Debug, Default, StructOpt)]
 pub struct UpdateOptions {
 }
 

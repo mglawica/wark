@@ -2,37 +2,33 @@ use inner;
 use local;
 
 
-#[derive(Debug, Default, Options)]
-#[options(no_short)]
+#[derive(Debug, Default, StructOpt)]
 pub struct Options {
-
-    #[options(help = "print help message", short="h")]
-    pub help: bool,
-
-    #[options(help="a JSON file that represents deployment config",
-              meta="URL")]
+    #[structopt(help="a JSON file that represents deployment config",
+              long="--destination", name="URL")]
     pub destination: String,
 
-    #[options(help="a deployment name to deploy now", meta="NAME", short="d")]
+    #[structopt(help="a deployment name to deploy now",
+        name="NAME", short="d", long="deployment")]
     pub deployment: Option<String>,
 
-    #[options(help="prepare everything but don't deploy")]
+    #[structopt(help="prepare everything but don't deploy", long="dry-run")]
     pub dry_run: bool,
 
-    #[options(help="define variable (passed as `var.NAME` to templates)",
-              meta="NAME=VALUE", short="D")]
+    #[structopt(help="define variable (passed as `var.NAME` to templates)",
+                name="NAME=VALUE", short="D", long="var")]
     pub var: Vec<String>,
 
-    #[options(command)]
+    #[structopt(subcommand)]
     pub command: Option<Command>,
 }
 
-#[derive(Debug, Options)]
+#[derive(Debug, StructOpt)]
 pub enum Command {
-    #[options(help="run all preparation from inside a container")]
+    #[structopt(name="inner", help="run all preparation from inside a container")]
     Inner(inner::Options),
-    #[options(help="check that configs are up to date (for CI)")]
+    #[structopt(name="check", help="check that configs are up to date (for CI)")]
     Check(local::CheckOptions),
-    #[options(help="update generated config files")]
+    #[structopt(name="update", help="update generated config files")]
     Update(local::UpdateOptions),
 }
