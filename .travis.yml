@@ -1,0 +1,45 @@
+language: rust
+rust: stable
+os: linux
+dist: trusty
+sudo: false
+addons:
+  apt:
+    packages:
+    - musl-tools
+
+cache:
+- apt
+- cargo
+
+before_cache:
+- rm -r $TRAVIS_BUILD_DIR/target/debug
+
+script:
+- cargo build $CARGO_ARGS
+- cargo test $CARGO_ARGS
+
+jobs:
+  include:
+  - rust: stable
+  - rust: beta
+  - rust: nightly
+
+  # deploy
+  - stage: publish docs
+    env:
+    install: true
+
+    before_deploy: |
+      mkdir -p dist
+      rustup target add x86_64-unknown-linux-musl
+      cargo build --target=x86_64-unknown-linux-musl --release
+
+    deploy:
+    - provider: releases
+      api_key:
+        secure: "KZDEL7XiOL9+4qvo56xDBi64DW84sbgBDZfTXgriHIimhelnjR9EL2lpVw9YSrDUXNh7p9gsegMir1mZBzmXhd3wPP4RToQ3UrgO6UByAXwpZgJ24es86TuCHHiu8oPW4Idr13sKedolmJJEJMS9WFI+mArmiNGr1tS4DOKUQQTaeXH9YJgOYWcuIA7TvFmLz83B1ZFHPIbJpNOEuJZ0ud1BJcAnhhs7mKh6q+yvSvRXsaEW4bqmioGh7A8srBOD9NeMo0mAEXKG0nEZ8UMktp6aZq7QgtV+4TGD40/2nf6RJEPNjbe5XrzMxOXAEVjeb7qzVQIlScz1400Jdqk8Ala4hpcIxZeikzAalqIf8RTpHLQvjc+wswalMbbyBQzkvjo17AWQWJzXUK1sh5/MbBF6Ej5yWXBFjihMZ9kmX3T5JgK13cq11d0TgXuygdX93y0n/6bNqPXoO2wM2Zfm8fzNQeXINvTU1C0ykDKzfscII4WFnMeJGXkh6xB0TiXrtzE+VPI6aZ4cuwXv1qBDyCSstusDLu7/R3cQKxgqDVOsjpU8jRlSeCOfDODiLFG8qPQnY1pGN7cxx5P2WcbuqJU3NnzQ0Wfua/GusoQm5YGXzg8NC8qKPzRD25bZ7+7YIWS6plKhLj+QFGLffJ9duld6/qwj29wfgifbYbLntTA="
+      file: "target/x86_64-unknown-linux-musl/release/wark"
+      skip_cleanup: true
+      on:
+        tags: true
