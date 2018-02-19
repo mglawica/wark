@@ -1,14 +1,13 @@
 [package]
 name = "wark"
 description = """
-    A yet deployment tool for mglawica stack
+    A yet another deployment tool for mglawica stack
 """
 license = "MIT/Apache-2.0"
 readme = "README.md"
 keywords = ["deplay", "containers", "vagga"]
 categories = ["command-line-utilities"]
-homepage = "https://github.com/tailhook/wark"
-documentation = "https://github.com/tailhook/wark"
+homepage = "https://github.com/mglawica/wark"
 version = "0.1.0"
 authors = ["paul@colomiets.name"]
 
@@ -21,8 +20,8 @@ url = "1.5.1"
 futures = "0.1.16"
 tokio-core = "0.1.10"
 tk-easyloop =  "0.1.1"
-log = "0.4.0-rc.1"
-env_logger = "0.5.0-rc.1"
+log = "0.4.1"
+env_logger = "0.5.0"
 quire = { version="0.3.1", default-features=false }
 serde = "1.0.0"
 serde_json = "1.0.0"
@@ -34,7 +33,7 @@ trimmer = "0.3.6"
 trimmer_derive = "0.1.0"
 lazy_static = "1.0.0"
 void = "1.0.0"
-difference = "1.0.0"
+difference = "2.0.0"
 git2 = { version="0.6.9", default-features=false, optional=true }
 tar = "0.4.14"
 libflate = "0.1.13"
