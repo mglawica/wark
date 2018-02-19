@@ -125,10 +125,10 @@ pub fn parse_spec_or_exit(config: Config) -> Spec {
                 }
             };
 
-            let config_path = entry.path().to_str().expect("valid filename")
-                .to_string();
+            let config_path = entry.path().to_str().expect("valid filename");
             let res = parse_config(&config_path,
                     &ContainerConfig::validator(), &Quire::default());
+            let config_path = format!("/{}", config_path);
             let config: Arc<ContainerConfig> = match res {
                 Ok(cfg) => cfg,
                 Err(e) => {
