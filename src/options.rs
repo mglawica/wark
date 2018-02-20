@@ -17,6 +17,7 @@ pub struct Options {
 
     #[structopt(help="define variable (passed as `var.NAME` to templates)",
                 name="NAME=VALUE", short="D", long="var")]
+    #[structopt(raw(number_of_values="1"))]
     pub var: Vec<String>,
 
     #[structopt(subcommand)]
