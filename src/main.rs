@@ -27,6 +27,7 @@ extern crate void;
 
 
 use std::collections::HashMap;
+use std::process::exit;
 use structopt::StructOpt;
 
 mod base;
@@ -42,7 +43,14 @@ mod wark_version;
 
 use std::env;
 
-fn config(path: &str) -> deploy::Config {
+fn config(path: &Option<String>) -> deploy::Config {
+    let path = match *path {
+        Some(ref path) => path,
+        None => {
+            eprintln!("--destination is required");
+            exit(1);
+        }
+    };
     download::download(path, true)
     .and_then(|path| deploy::Config::parse(&path))
     .unwrap_or_else(|e| {

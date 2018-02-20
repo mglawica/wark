@@ -6,7 +6,7 @@ use local;
 pub struct Options {
     #[structopt(help="a JSON file that represents deployment config",
               long="--destination", name="URL")]
-    pub destination: String,
+    pub destination: Option<String>,
 
     #[structopt(help="a deployment name to deploy now",
         name="NAME", short="d", long="deployment")]
