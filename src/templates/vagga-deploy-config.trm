@@ -15,7 +15,7 @@ containers:
           path: '{{ dest | path }}'
       ## endfor
       - !Tar
-        url: "https://github.com/mglawica/wark/releases/download/v0.1.0/wark"
+        url: "https://github.com/mglawica/wark/releases/download/v0.1.1/wark"
         path: /tmp
         script: "/tmp/wark"
       - !Cmd
