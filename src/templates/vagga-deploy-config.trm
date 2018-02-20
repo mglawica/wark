@@ -17,7 +17,6 @@ containers:
       - !Tar
         url: "https://github.com/mglawica/wark/releases/download/v0.1.1/wark"
         path: /tmp
-        script: "/tmp/wark"
       - !Cmd
         - /tmp/wark
         - inner
