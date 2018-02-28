@@ -41,9 +41,6 @@ rand = "0.4.2"
 
 lithos-shim = { path = "lithos-shim" }
 
-[patch.crates-io]
-abstract-ns = { git="https://github.com/tailhook/abstract-ns", rev="b0bb540" }
-
 [features]
 git = ["git2"]
 default = ["git"]
