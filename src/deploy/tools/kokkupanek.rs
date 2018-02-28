@@ -38,7 +38,7 @@ struct GraphqlRequest<'a> {
 #[derive(Debug)]
 struct GetLeaderCodec(Option<oneshot::Sender<String>>);
 #[derive(Debug)]
-struct PostNewDeployment(Option<oneshot::Sender<()>>, Arc<Vec<u8>>);
+struct PostNewDeployment(Option<oneshot::Sender<Json>>, Arc<Vec<u8>>);
 
 #[derive(Debug, Serialize)]
 pub struct NewDeployment<'a> {
@@ -49,7 +49,6 @@ pub struct NewDeployment<'a> {
 
 #[derive(Debug, Serialize)]
 pub struct NewDaemon<'a> {
-    name: &'a String,
     config: &'a String,
     image: &'a String,
     //variables: Option<Vec<NewVariable>>,
@@ -57,7 +56,6 @@ pub struct NewDaemon<'a> {
 
 #[derive(Debug, Serialize)]
 pub struct NewCommand<'a> {
-    name: &'a String,
     config: &'a String,
     image: &'a String,
 }
@@ -98,7 +96,6 @@ pub(in deploy) fn execute(ctx: &Context,
     gvars.insert("config", to_value(&NewDeployment {
         version: &ctx.spec.version,
         daemons: dep.daemons.values().map(|d| Ok(NewDaemon {
-            name: &d.name,
             image: &ctx.containers.get(&d.container)
                 .ok_or_else(|| {
                     err_msg(format!("container {:?} not found", d.container))
@@ -106,7 +103,6 @@ pub(in deploy) fn execute(ctx: &Context,
             config: &d.config_path,
         })).collect::<Result<_, Error>>()?,
         commands: dep.commands.values().map(|c| Ok(NewCommand {
-            name: &c.name,
             image: &ctx.containers.get(&c.container)
                 .ok_or_else(|| {
                     err_msg(format!("container {:?} not found", c.container))
@@ -195,7 +191,11 @@ pub(in deploy) fn execute(ctx: &Context,
                 })
             })
             .then(move |res| match res {
-                Ok(()) => Either::A(ok(Loop::Break(()))),
+                Ok(info) => {
+                    // TODO(tailhook) figure out is it okay
+                    info!("Response {:#?}", info);
+                    Either::A(ok(Loop::Break(())))
+                }
                 Err(ref e) if niter > 20 => {
                     error!("Error: {}. Bailing out...", e);
                     Either::A(err(()))
@@ -259,7 +259,7 @@ impl<S> Codec<S> for GetLeaderCodec {
 impl<S> Codec<S> for PostNewDeployment {
     type Future = FutureResult<EncoderDone<S>, HError>;
     fn start_write(&mut self, mut e: Encoder<S>) -> Self::Future {
-        e.request_line("GET", "/v1/action", Version::Http11);
+        e.request_line("GET", "/v1/wait_action", Version::Http11);
         e.add_header("Host", "verwalter").unwrap();
         e.add_header("Content-Type", "application/json").unwrap();
         e.add_header("User-Agent",
@@ -280,7 +280,15 @@ impl<S> Codec<S> for PostNewDeployment {
         -> Result<Async<usize>, HError>
     {
         assert!(end);
-        self.0.take().expect("once").send(()).ok();
+        if data.len() == 0 {
+            self.0.take().expect("once").send(Json::String("okay".into())).ok();
+        } else {
+            from_slice(data)
+            .map_err(|e| error!("Can't deserialize data: {}", e))
+            .map(|val: Json| {
+                self.0.take().expect("once").send(val).ok()
+            }).ok();
+        }
         Ok(Async::Ready(data.len()))
     }
 }
