@@ -16,7 +16,7 @@ use download::download;
 use templates::{Pattern};
 
 
-static DEFAULT_CIRUELA: &str = "0.5.2";
+static DEFAULT_CIRUELA: &str = "0.5.10";
 
 
 #[derive(Debug, Deserialize)]
@@ -60,44 +60,43 @@ pub(in deploy) fn execute(ctx: &Context,
         unpack_ciruela(&tar).context("can't unpack ciruela")?;
     }
 
+
     let mut context = Vars::new();
     context.set("vars", vars);
+    let hosts = set.hosts.iter().map(|h| {
+        h.render(&context)
+    }).collect::<Result<Vec<String>, _>>()
+        .map_err(|e| err_msg(format!("Can't render host pattern: {}", e)))?;
+
+    let mut cmd = Command::new(ciruela);
+    cmd.arg("sync");
     for (name, container) in &ctx.containers {
         context.set("container_name", name);
         context.set("container_version", &container.version);
-        let hosts = set.hosts.iter().map(|h| {
-            h.render(&context)
-        }).collect::<Result<Vec<String>, _>>()
-            .map_err(|e| err_msg(format!("Can't render host pattern: {}", e)))?;
         let dir = set.dir.render(&context)
             .map_err(|e| err_msg(format!("Can't render dir pattern: {}", e)))?;
-        let mut cmd = Command::new(ciruela);
-        cmd.arg("upload");
-        cmd.arg("-d");
-        cmd.arg(format!("/vagga/containers/{}", container.version));
-        for h in hosts {
-            cmd.arg(format!("{}:{}", h, dir));
-        }
-
-        if ctx.dry_run {
-            info!("Would run: {:?}", cmd);
-        } else {
-            info!("Running: {:?}", cmd);
-            let start = Instant::now();
-            let status = cmd.status()
-                .with_context(|e| {
-                    error!("Ciruela error: {}", e);
-                    Fail::new("failed to run ciruela")
-                })?;
-            if status.success() {
-                let dur = start.elapsed();
-                if dur.as_secs() > 2 {
-                    info!("Upload done in {}s", dur.as_secs());
-                }
-            } else {
-                error!("Ciruela {}", status);
-                return Err(err_msg("ciruela failed"));
+        cmd.arg("--append-weak");
+        cmd.arg(format!("/vagga/containers/{}:{}", container.version, dir));
+    }
+    cmd.args(&hosts);
+    if ctx.dry_run {
+        info!("Would run: {:?}", cmd);
+    } else {
+        info!("Running: {:?}", cmd);
+        let start = Instant::now();
+        let status = cmd.status()
+            .with_context(|e| {
+                error!("Ciruela error: {}", e);
+                Fail::new("failed to run ciruela")
+            })?;
+        if status.success() {
+            let dur = start.elapsed();
+            if dur.as_secs() > 2 {
+                info!("Upload done in {}s", dur.as_secs());
             }
+        } else {
+            error!("Ciruela {}", status);
+            return Err(err_msg("ciruela failed"));
         }
     }
     Ok(())
