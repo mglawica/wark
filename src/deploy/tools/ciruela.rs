@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::fs::{File, set_permissions};
-use std::io;
+use std::io::{self, BufReader};
 use std::os::unix::fs::PermissionsExt;
 use std::process::Command;
 use std::time::Instant;
@@ -32,7 +32,7 @@ fn default_ciruela() -> String {
 }
 
 fn unpack_ciruela(tar: &Path) -> Result<(), Error> {
-    let f = File::open(&tar)?;
+    let f = BufReader::new(File::open(&tar)?);
     let d = Decoder::new(f)?;
     let mut a = Archive::new(d);
     for entry in a.entries()? {
