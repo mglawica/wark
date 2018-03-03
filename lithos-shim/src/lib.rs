@@ -1,9 +1,12 @@
 extern crate quire;
 extern crate serde;
 extern crate trimmer;
+extern crate ipnetwork;
 extern crate serde_json;
+extern crate serde_str;
 
 #[macro_use] extern crate serde_derive;
+#[macro_use] extern crate failure;
 
 mod trm;
 
