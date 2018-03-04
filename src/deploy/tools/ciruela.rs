@@ -21,7 +21,7 @@ static DEFAULT_CIRUELA: &str = "0.5.10";
 
 #[derive(Debug, Deserialize)]
 pub struct Settings {
-    hosts: Vec<Pattern>,
+    clusters: Vec<Pattern>,
     dir: Pattern,
     #[serde(default="default_ciruela")]
     ciruela_version: String,
@@ -63,7 +63,7 @@ pub(in deploy) fn execute(ctx: &Context,
 
     let mut context = Vars::new();
     context.set("vars", vars);
-    let hosts = set.hosts.iter().map(|h| {
+    let clusters = set.clusters.iter().map(|h| {
         h.render(&context)
     }).collect::<Result<Vec<String>, _>>()
         .map_err(|e| err_msg(format!("Can't render host pattern: {}", e)))?;
@@ -78,7 +78,7 @@ pub(in deploy) fn execute(ctx: &Context,
         cmd.arg("--append-weak");
         cmd.arg(format!("/vagga/base/.roots/{}:{}", container.version, dir));
     }
-    cmd.args(&hosts);
+    cmd.args(&clusters);
     if ctx.dry_run {
         info!("Would run: {:?}", cmd);
     } else {
