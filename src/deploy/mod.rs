@@ -27,8 +27,9 @@ struct Context {
 
 
 fn check_ver(s: &str) -> bool {
-    s.len() > 0 &&
-        s.chars().all(|x| x.is_ascii() && x.is_alphanumeric() || x == '.')
+    s.len() > 0 && s.chars().all(|x| {
+        x.is_ascii() && x.is_alphanumeric() || x == '-' || x == '.'
+    })
 }
 
 pub fn main(config: Config, deployment: String, dry_run: bool,
@@ -53,11 +54,14 @@ pub fn main(config: Config, deployment: String, dry_run: bool,
     let containers = deployment.commands.values().map(|x| &x.container)
         .chain(deployment.daemons.values().map(|x| &x.container));
     for container in containers {
-        if context.containers.contains_key(container) {
+        let dep_container = format!("{}{}",
+            container, context.spec.config.container_suffix);
+        if context.containers.contains_key(&dep_container) {
             continue;
         }
         let output = Command::new("vagga")
-            .arg("_capsule").arg("build").arg(container).arg("--print-version")
+            .arg("_capsule").arg("build").arg(&dep_container)
+            .arg("--print-version")
             .stderr(Stdio::inherit())
             .stdout(Stdio::piped())
             .output();
@@ -65,15 +69,15 @@ pub fn main(config: Config, deployment: String, dry_run: bool,
             Ok((s, ver_bytes)) if s.success() => ver_bytes,
             Ok((s, _)) => {
                 error!("Container {:?} failed to build with status: {}",
-                    container, s);
+                    dep_container, s);
                 code.report_error();
-                failed.insert(container.clone());
+                failed.insert(dep_container.clone());
                 continue;
             }
             Err(e) => {
-                error!("Can't build container {:?}: {}", container, e);
+                error!("Can't build container {:?}: {}", dep_container, e);
                 code.report_error();
-                failed.insert(container.clone());
+                failed.insert(dep_container.clone());
                 continue;
             }
         };
@@ -81,13 +85,13 @@ pub fn main(config: Config, deployment: String, dry_run: bool,
             Ok(s) if check_ver(&s.trim()) => s.trim().to_string(),
             _ => {
                 error!("Invalid version returned for container {:?}: {:?}",
-                    container, String::from_utf8_lossy(&ver_bytes));
+                    dep_container, String::from_utf8_lossy(&ver_bytes));
                 code.report_error();
-                failed.insert(container.clone());
+                failed.insert(dep_container.clone());
                 continue;
             }
         };
-        context.containers.insert(container.clone(), Container {
+        context.containers.insert(dep_container.clone(), Container {
             version: version,
         });
     }

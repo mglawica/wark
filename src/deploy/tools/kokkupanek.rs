@@ -101,14 +101,16 @@ pub(in deploy) fn execute(ctx: &Context,
     gvars.insert("config", to_value(&NewDeployment {
         version: &ctx.spec.version,
         daemons: dep.daemons.values().map(|d| Ok(NewDaemon {
-            image: &ctx.containers.get(&d.container)
+            image: &ctx.containers
+                .get(&(d.container.clone() + &ctx.spec.config.container_suffix))
                 .ok_or_else(|| {
                     err_msg(format!("container {:?} not found", d.container))
                 })?.version,
             config: &d.config_path,
         })).collect::<Result<_, Error>>()?,
         commands: dep.commands.values().map(|c| Ok(NewCommand {
-            image: &ctx.containers.get(&c.container)
+            image: &ctx.containers
+                .get(&(c.container.clone() + &ctx.spec.config.container_suffix))
                 .ok_or_else(|| {
                     err_msg(format!("container {:?} not found", c.container))
                 })?.version,

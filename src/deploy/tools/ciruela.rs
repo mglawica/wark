@@ -76,7 +76,8 @@ pub(in deploy) fn execute(ctx: &Context,
         let dir = set.dir.render(&context)
             .map_err(|e| err_msg(format!("Can't render dir pattern: {}", e)))?;
         cmd.arg("--append-weak");
-        cmd.arg(format!("/vagga/base/.roots/{}:{}", container.version, dir));
+        cmd.arg(format!("/vagga/base/.roots/{}/root:{}",
+                        container.version, dir));
     }
     cmd.args(&clusters);
     if ctx.dry_run {
