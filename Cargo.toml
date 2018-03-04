@@ -34,7 +34,7 @@ trimmer_derive = "0.1.0"
 lazy_static = "1.0.0"
 void = "1.0.0"
 difference = "2.0.0"
-git2 = { version="0.6.9", default-features=false, optional=true }
+git2 = { version="0.7.0", default-features=false, optional=true }
 tar = "0.4.14"
 libflate = "0.1.13"
 rand = "0.4.2"
