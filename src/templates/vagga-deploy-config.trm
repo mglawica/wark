@@ -16,7 +16,8 @@ containers:
       ## endfor
       - !Tar
         url: "https://github.com/mglawica/wark/releases/download/v0.3.1/wark"
-        path: /tmp
+        path: /tmp/wark
+      - !Sh chmod +x /tmp/wark
       - !Cmd
         - /tmp/wark
         - inner
