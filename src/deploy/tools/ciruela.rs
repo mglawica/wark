@@ -53,7 +53,7 @@ pub(in deploy) fn execute(ctx: &Context,
     -> Result<(), Error>
 {
     let ciruela = Path::new("/bin/ciruela");
-    if !ciruela.exists() {
+    if !ciruela.exists() && !ctx.dry_run {
         let tar = download(&format!("https://github.com/tailhook/ciruela/\
             releases/download/v{0}/ciruela-static-v{0}.tar.gz",
             set.ciruela_version), false)?;
