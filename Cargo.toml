@@ -8,7 +8,7 @@ readme = "README.md"
 keywords = ["deplay", "containers", "vagga"]
 categories = ["command-line-utilities"]
 homepage = "https://github.com/mglawica/wark"
-version = "0.3.1"
+version = "0.3.2"
 authors = ["paul@colomiets.name"]
 
 [dependencies]
