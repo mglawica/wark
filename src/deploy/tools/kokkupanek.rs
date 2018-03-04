@@ -37,7 +37,13 @@ struct GraphqlRequest<'a> {
 }
 
 #[derive(Debug)]
-struct GetLeaderCodec(Option<oneshot::Sender<String>>);
+pub enum LeaderResult {
+    SameHost,
+    OtherHost(String),
+}
+
+#[derive(Debug)]
+struct GetLeaderCodec(Option<oneshot::Sender<LeaderResult>>);
 #[derive(Debug)]
 struct PostNewDeployment(Option<oneshot::Sender<Json>>, Arc<Vec<u8>>);
 
@@ -142,35 +148,44 @@ pub(in deploy) fn execute(ctx: &Context,
                 .map_err(move |e| {
                     err_msg(format!("error connecting to {}: {}", addr, e))
                 })
-            })
-            .and_then(|sock| {
-                let (tx, rx) = oneshot::channel();
-                let proto = Proto::new(sock,
-                    &handle(), &Arc::new(Config::new()));
-                proto.send_all(once::<_, HError>(Ok(
-                    GetLeaderCodec(Some(tx))
-                )).chain(empty().into_stream()))
-                .select2(rx)
-                .then(|res| match res {
-                    Ok(Either::B((val, _))) => Ok(val),
-                    Err(Either::A((e, _))) => Err(e.into()),
-                    Err(Either::B((e, _))) => Err(e.into()),
-                    _ => {
-                        Err(err_msg("request error")) // TODO(tailhook)
+                .and_then(|sock| {
+                    let (tx, rx) = oneshot::channel();
+                    let proto = Proto::new(sock,
+                        &handle(), &Arc::new(Config::new()));
+                    proto.send_all(once::<_, HError>(Ok(
+                        GetLeaderCodec(Some(tx))
+                    )).chain(empty().into_stream()))
+                    .select2(rx)
+                    .then(|res| match res {
+                        Ok(Either::B((val, _))) => Ok(val),
+                        Err(Either::A((e, _))) => Err(e.into()),
+                        Err(Either::B((e, _))) => Err(e.into()),
+                        _ => {
+                            Err(err_msg("request error")) // TODO(tailhook)
+                        }
+                    })
+                })
+                .and_then(move |leader| {
+                    match leader {
+                        LeaderResult::SameHost => {
+                            info!("Leader is here {}", addr);
+                            Either::A(ok(addr))
+                        }
+                        LeaderResult::OtherHost(name) => {
+                            info!("Leader name {:?}", name);
+                            Either::B(ns.resolve_auto(&name, 8379)
+                                .map_err(move |e| {
+                                    err_msg(format!(
+                                        "Error resolving {:?}: {}", name, e))
+                                })
+                                .and_then(|addr| {
+                                    addr.pick_one().ok_or_else(||
+                                        err_msg("could not resolve \
+                                                 leader name"))
+                                }))
+                        }
                     }
                 })
-            })
-            .and_then(move |leader_name| {
-                info!("Leader name {:?}", leader_name);
-                ns.resolve_auto(&leader_name, 8379)
-                .map_err(move |e| {
-                    err_msg(format!(
-                        "Error resolving {:?}: {}", leader_name, e))
-                })
-            })
-            .and_then(|addr| {
-                addr.pick_one()
-                    .ok_or_else(|| err_msg("could not resolve leader name"))
             })
             .and_then(|addr| {
                 debug!("Connecting to leader at ip {}", addr);
@@ -245,8 +260,13 @@ impl<S> Codec<S> for GetLeaderCodec {
         assert!(end);
 
         #[derive(Deserialize)]
+        struct ElectionState {
+            is_leader: bool,
+        }
+        #[derive(Deserialize)]
         struct StatusInfo {
             leader: LeaderInfo,
+            election_state: ElectionState,
         }
         #[derive(Deserialize)]
         struct LeaderInfo {
@@ -256,7 +276,12 @@ impl<S> Codec<S> for GetLeaderCodec {
         from_slice(data)
         .map_err(|e| error!("Can't deserialize data: {}", e))
         .map(|val: StatusInfo| {
-            self.0.take().expect("once").send(val.leader.name).ok()
+            let res = if val.election_state.is_leader {
+                LeaderResult::SameHost
+            } else {
+                LeaderResult::OtherHost(val.leader.name)
+            };
+            self.0.take().expect("once").send(res).ok()
         })
         .ok();
         Ok(Async::Ready(data.len()))
