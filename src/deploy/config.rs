@@ -20,7 +20,7 @@ pub enum VersionKind {
 #[derive(Debug, Deserialize)]
 #[serde(tag="tool", rename_all="snake_case")]
 pub enum Stage {
-    CiruelaUpload(tools::ciruela::Settings),
+    Ciruela(tools::ciruela::Settings),
     VerwalterKokkupanek(tools::kokkupanek::Settings),
 }
 

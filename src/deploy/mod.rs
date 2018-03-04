@@ -101,7 +101,7 @@ pub fn main(config: Config, deployment: String, dry_run: bool,
 
     for item in &context.spec.config.script {
         match *item {
-            Stage::CiruelaUpload(ref settings) => {
+            Stage::Ciruela(ref settings) => {
                 match tools::ciruela::execute(&context, settings, &vars) {
                     Ok(()) => {}
                     Err(e) => {
