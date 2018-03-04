@@ -13,6 +13,7 @@ use tk_easyloop::{self, handle, timeout};
 use trimmer::{Context as Vars};
 use tokio_core::net::TcpStream;
 use serde_json::{to_vec, to_value, from_slice, Value as Json};
+use serde_json::{to_string_pretty};
 use tk_http::{Version, Status};
 use tk_http::client::{RecvMode, Head, Error as HError, Encoder, EncoderDone};
 use tk_http::client::{Codec, Config, Proto};
@@ -88,8 +89,6 @@ pub(in deploy) fn execute(ctx: &Context,
                 ctx.deployment)));
         }
     };
-    println!("Kokkupanek: settings: {:?}, vars: {:?}\nContext: {:#?}",
-        set, vars, ctx);
 
     let mut gvars = HashMap::new();
     gvars.insert("slug", Json::String(slug));
@@ -111,10 +110,18 @@ pub(in deploy) fn execute(ctx: &Context,
         })).collect::<Result<_, Error>>()?,
     }).expect("new deployment serializes fine"));
 
-    let req = Arc::new(to_vec(&GraphqlRequest {
+    let req_data = GraphqlRequest {
         query: deployment_graphql,
         variables: gvars,
-    }).expect("can serialize graphql request"));
+    };
+    let req = Arc::new(to_vec(&req_data)
+        .expect("can serialize graphql request"));
+
+    if ctx.dry_run {
+        info!("Would execute graphql: {}", to_string_pretty(&req_data)
+            .expect("can serialize graphql request"));
+        return Ok(());
+    }
 
     tk_easyloop::run(move || {
         let ns = ns_env_config::init(&handle())
