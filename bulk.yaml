@@ -7,5 +7,10 @@ versions:
   block-end: ^\[.*\]
   regex: ^version\s*=\s*"(\S+)"
 
+- file: Cargo.lock
+  block-start: ^name\s*=\s*"wark"
+  block-end: ^\[.*\]
+  regex: ^version\s*=\s*"(\S+)"
+
 - file: src/templates/vagga-deploy-config.trm
   regex: https://github\.com/mglawica/wark/releases/download/v([^/]+)/
