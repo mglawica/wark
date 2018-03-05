@@ -22,5 +22,4 @@ containers:
         - /tmp/wark
         - inner
         - '--lithos-configs={{ spec.config.config_files_inner | path }}'
-        - --dns-symlinks=/state
   ## endfor
