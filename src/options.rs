@@ -26,10 +26,12 @@ pub struct Options {
 
 #[derive(Debug, StructOpt)]
 pub enum Command {
-    #[structopt(name="inner", help="run all preparation from inside a container")]
+    #[structopt(name="inner",
+        about="Runs all preparation from inside a container")]
     Inner(inner::Options),
-    #[structopt(name="check", help="check that configs are up to date (for CI)")]
+    #[structopt(name="check",
+        about="Checks that configs are up to date (run it in CI)")]
     Check(local::CheckOptions),
-    #[structopt(name="update", help="update generated config files")]
+    #[structopt(name="update", about="Updates generated config files")]
     Update(local::UpdateOptions),
 }
