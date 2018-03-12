@@ -1,4 +1,4 @@
-use std::io::{Read, Write};
+use std::io::{self, Read, Write};
 use std::fs::{File, rename, create_dir_all};
 use std::path::Path;
 
@@ -7,6 +7,7 @@ use trimmer::{Context, RenderError};
 use void::ResultVoidExt;
 
 use deploy::{Config, Spec, parse_spec_or_exit};
+use failure::Error;
 use exit::ExitCode;
 use templates;
 
@@ -16,6 +17,21 @@ pub struct CheckOptions {
 
 #[derive(Debug, Default, StructOpt)]
 pub struct UpdateOptions {
+}
+
+pub fn check_config(spec: &Spec) -> Result<bool, Error> {
+    let deploy_config = render_deploy_config(&spec)
+        .map_err(|e| format_err!("{}", e))?;
+    let ref filename = spec.config.vagga_config;
+    let mut buf = String::with_capacity(1024);
+    let mut f = match File::open(&filename) {
+        Ok(f) => f,
+        Err(ref e) if e.kind() == io::ErrorKind::NotFound => return Ok(false),
+        Err(e) => bail!("Can't open file {:?}: {}", filename, e),
+    };
+    f.read_to_string(&mut buf)
+        .map_err(|e| format_err!("Error reading {:?}: {}", filename, e))?;
+    return Ok(deploy_config == buf);
 }
 
 pub fn check(_options: CheckOptions, config: Config) -> ! {
@@ -32,6 +48,7 @@ pub fn check(_options: CheckOptions, config: Config) -> ! {
         exit.report_error();
         eprintln!("Config {:?} is not up to date", spec.config.vagga_config);
         println!("{}", Changeset::new(&buf, &deploy_config, "\n"));
+        info!("To fix config run: vagga deploy update");
     }
     if exit.is_ok() {
         info!("Everything is fine, ready for deploy");

@@ -2,10 +2,12 @@ use std::str::from_utf8;
 use std::process::{Command, Stdio, exit};
 use std::collections::{BTreeSet, BTreeMap, HashMap};
 
+
 pub mod config;
 pub mod spec;
 mod tools;
 
+use local::check_config;
 pub use self::config::{Config, Stage};
 pub use self::spec::{Spec, parse_spec_or_exit};
 
@@ -51,6 +53,21 @@ pub fn main(config: Config, deployment: String, dry_run: bool,
             exit(1);
         }
     };
+
+    match check_config(&context.spec) {
+        Ok(true) => {}
+        Ok(false) => {
+            error!("Config {:?} is not up to date.",
+                context.spec.config.vagga_config);
+            info!("Please run: vagga deploy update");
+            code.report_error();
+        }
+        Err(e) => {
+            error!("Error checking {:?}: {}",
+                context.spec.config.vagga_config, e);
+            code.exit();
+        }
+    }
     let containers = deployment.commands.values().map(|x| &x.container)
         .chain(deployment.daemons.values().map(|x| &x.container));
     for container in containers {
@@ -98,7 +115,7 @@ pub fn main(config: Config, deployment: String, dry_run: bool,
 
     info!("Built containers {:?}",
         context.containers.values().map(|x| &x.version).collect::<Vec<_>>());
-    if !code.is_ok() {
+    if failed.len() > 0 {
         error!("Failed containers {:?}", failed);
     }
     code.exit_if_failed();
