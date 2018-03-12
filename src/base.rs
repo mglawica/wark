@@ -12,6 +12,13 @@ pub fn main(config: Config) -> ! {
             println!("    {:10} [daemons: {}, commands: {}]",
                 name, dep.daemons.len(), dep.commands.len());
         }
+        exit(0);
+    } else {
+        error!("No deployments available. Add some files matching {:?}",
+            format!("{}/{}",
+                spec.config.deployment_dirs,
+                spec.config.lithos_configs)
+            .replace(|c| c == '(' || c == ')', ""));
+        exit(1);
     }
-    exit(0);
 }
