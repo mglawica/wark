@@ -1,5 +1,6 @@
 use std::io::{Read, Write};
-use std::fs::{File, rename};
+use std::fs::{File, rename, create_dir_all};
+use std::path::Path;
 
 use difference::Changeset;
 use trimmer::{Context, RenderError};
@@ -49,6 +50,12 @@ pub fn update(_options: UpdateOptions, config: Config) -> ! {
     let spec = parse_spec_or_exit(config);
     let deploy_config = render_deploy_config(&spec)
         .map_err(|e| exit.fatal_error(e)).void_unwrap();
+    if let Some(dir) = Path::new(&spec.config.vagga_config).parent() {
+        if !dir.is_dir() {
+            create_dir_all(&dir)
+            .map_err(|e| exit.fatal_error(e)).void_unwrap();
+        }
+    }
     let tmp_name = format!("{}.tmp", spec.config.vagga_config);
     File::create(&tmp_name)
         .and_then(|mut f| f.write_all(deploy_config.as_bytes()))
