@@ -15,7 +15,7 @@ containers:
           path: '{{ dest | path }}'
       ## endfor
       - !Download
-        url: "https://github.com/mglawica/wark/releases/download/v0.3.3/wark"
+        url: "https://github.com/mglawica/wark/releases/download/v0.3.4/wark"
         path: /tmp/wark
       - !Sh chmod +x /tmp/wark
       - !Cmd
