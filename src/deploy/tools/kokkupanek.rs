@@ -58,6 +58,8 @@ pub struct NewDeployment<'a> {
 pub struct NewDaemon<'a> {
     config: &'a String,
     image: &'a String,
+    cpu_shares: i32,
+    memory_limit: f64,
     //variables: Option<Vec<NewVariable>>,
 }
 
@@ -65,6 +67,8 @@ pub struct NewDaemon<'a> {
 pub struct NewCommand<'a> {
     config: &'a String,
     image: &'a String,
+    cpu_shares: i32,
+    memory_limit: f64,
 }
 
 pub(in deploy) fn execute(ctx: &Context,
@@ -107,6 +111,8 @@ pub(in deploy) fn execute(ctx: &Context,
                     err_msg(format!("container {:?} not found", d.container))
                 })?.version,
             config: &d.config_path,
+            cpu_shares: d.config.cpu_shares as i32,
+            memory_limit: d.config.memory_limit as f64,
         })).collect::<Result<_, Error>>()?,
         commands: dep.commands.values().map(|c| Ok(NewCommand {
             image: &ctx.containers
@@ -115,6 +121,8 @@ pub(in deploy) fn execute(ctx: &Context,
                     err_msg(format!("container {:?} not found", c.container))
                 })?.version,
             config: &c.config_path,
+            cpu_shares: c.config.cpu_shares as i32,
+            memory_limit: c.config.memory_limit as f64,
         })).collect::<Result<_, Error>>()?,
     }).expect("new deployment serializes fine"));
 
